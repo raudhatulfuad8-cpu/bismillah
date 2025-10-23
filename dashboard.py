@@ -52,7 +52,7 @@ st.markdown("""
             transition: all 0.3s ease;
         }
         .stButton>button:hover {
-            box-shadow: 0 8px 30px rgba(56, 249, 215, 0.7);
+            box_shadow: 0 8px 30px rgba(56, 249, 215, 0.7);
             transform: translateY(-2px);
         }
         /* Peningkatan Gaya Judul */
@@ -118,10 +118,10 @@ def load_models():
     classifier = H5_FILE_PATH 
     detector = PT_FILE_PATH
 
-    # Tampilkan status pemuatan model Anda
-    st.sidebar.markdown("---")
-    st.sidebar.success(f"Model Klasifikasi ({H5_FILE_PATH}) dimuat (placeholder).")
-    st.sidebar.success(f"Model Deteksi ({PT_FILE_PATH}) dimuat (placeholder).")
+    # --- Bagian status pemuatan model di sidebar telah dihapus di sini ---
+    # st.sidebar.markdown("---")
+    # st.sidebar.success(f"Model Klasifikasi ({H5_FILE_PATH}) dimuat (placeholder).")
+    # st.sidebar.success(f"Model Deteksi ({PT_FILE_PATH}) dimuat (placeholder).")
         
     return classifier, detector
 
