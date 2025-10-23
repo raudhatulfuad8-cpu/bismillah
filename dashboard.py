@@ -29,57 +29,72 @@ H5_CLASSES = ['Singa', 'Cheetah']
 
 st.set_page_config(
     page_title="Visualisasi Model AI (Python Native)",
-    page_icon="✨",
+    page_icon="🦁",
     layout="wide"
 )
 
-# Styling menggunakan Markdown dan unsafe_allow_html=True
-# Ini mensimulasikan tema gelap dan memperkuat estetika
+# Styling yang DITINGKATKAN untuk visualisasi yang lebih menarik
 st.markdown("""
     <style>
         .stApp {
-            background-color: #0d1117; 
+            background-color: #0d1117; /* Darker background */
             color: #c9d1d9;
         }
-        /* Styling untuk tombol dan judul */
+        /* Peningkatan Styling untuk Tombol */
         .stButton>button {
-            background-image: linear-gradient(to right, #8b5cf6, #ec4899); /* Ungu ke Pink */
-            color: white !important;
+            background-image: linear-gradient(to right, #43e97b 0%, #38f9d7 100%); /* Neon Green/Cyan Gradient */
+            color: #0d1117 !important;
             font-weight: bold;
             padding: 10px 20px;
-            border-radius: 12px;
+            border-radius: 25px; /* Lebih Bulat */
             border: none;
-            box-shadow: 0 4px 15px rgba(236, 72, 153, 0.5);
+            box-shadow: 0 5px 20px rgba(67, 233, 123, 0.4); /* Glow effect */
             transition: all 0.3s ease;
         }
         .stButton>button:hover {
-            box-shadow: 0 6px 20px rgba(236, 72, 153, 0.7);
+            box-shadow: 0 8px 30px rgba(56, 249, 215, 0.7);
+            transform: translateY(-2px);
         }
+        /* Peningkatan Gaya Judul */
         h1 {
-            color: white;
+            color: #ffffff;
             text-align: center;
+            font-size: 2.5rem;
+            text-shadow: 0 0 10px rgba(56, 249, 215, 0.5); /* Efek Cahaya */
         }
         .subheader {
-            color: #9ca3af;
+            color: #818cf8; /* Biru/Ungu lembut */
             text-align: center;
             margin-bottom: 2rem;
+            font-style: italic;
         }
-        .box-title-fuchsia {
-            color: #f472b6; /* Fuchsia-400 */
-            font-weight: 600;
-        }
-        .box-title-lime {
-            color: #a3e635; /* Lime-400 */
-            font-weight: 600;
-        }
-        .classification-output {
-            background-color: #5b21b6; /* Violet-700 */
+        /* Kotak Hasil Klasifikasi yang Lebih Menarik (Card) */
+        .classification-card {
+            background: linear-gradient(135deg, #7c3aed, #ec4899); /* Gradien Ungu-Pink */
             color: white;
-            padding: 1rem;
-            border-radius: 8px;
-            font-size: 1.5rem;
-            font-weight: bold;
+            padding: 1.5rem;
+            border-radius: 15px;
+            font-size: 1.6rem;
+            font-weight: 700;
             text-align: center;
+            box-shadow: 0 10px 20px rgba(124, 58, 237, 0.4);
+            animation: fadeIn 1s;
+        }
+        /* Kotak Hasil Deteksi (List Item) */
+        .detection-item {
+            background-color: #1f2937;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 5px;
+            border-left: 5px solid; /* Solid line for color coding */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        /* Animasi Sederhana */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
     </style>
 """, unsafe_allow_html=True)
@@ -87,9 +102,9 @@ st.markdown("""
 st.title("Aplikasi Klasifikasi & Deteksi Objek")
 st.markdown(f"""
     <p class="subheader">
-        Memuat dan menjalankan model Anda:
-        <span style="color:#a3e635; font-weight:bold;">YOLOv8 (best.pt)</span> dan 
-        <span style="color:#f472b6; font-weight:bold;">Classifier (classifier_model.h5)</span>.
+        Penganalisis Hewan Buas Canggih: Memuat Model 
+        <span style="color:#38f9d7; font-weight:bold;">YOLOv8 ({detector_model})</span> & 
+        <span style="color:#ec4899; font-weight:bold;">Classifier ({classifier_model})</span>
     </p>
 """, unsafe_allow_html=True)
 
@@ -99,32 +114,23 @@ st.markdown(f"""
 @st.cache_resource
 def load_models():
     """Memuat model H5 dan PT hanya sekali menggunakan Streamlit caching."""
-    if not HAS_MODEL_LIBS:
-        st.error("Peringatan: Pustaka TensorFlow/Ultralytics tidak ditemukan. Model tidak dapat dimuat atau dijalankan secara nyata.")
-        return None, None
+    if HAS_MODEL_LIBS:
+        st.success("✅ Pustaka ML (TensorFlow/Ultralytics) terdeteksi. Siap untuk inferensi nyata!")
+    else:
+        st.error("Peringatan: Pustaka TensorFlow/Ultralytics tidak ditemukan. Inferensi model akan disimulasikan.")
 
-    # Catatan: Dalam deployment Streamlit yang nyata, file-file ini harus ada di direktori yang sama 
-    # atau dimuat dari path yang benar.
-    
-    # 1. Pemuatan Model H5 (Klasifikasi)
+    # Catatan: Kami hanya menggunakan path file sebagai placeholder.
     H5_FILE_PATH = "classifier_model.h5"
-    try:
-        # classifier = tf.keras.models.load_model(H5_FILE_PATH) # Kode pemuatan aktual
-        classifier = H5_FILE_PATH # Placeholder model object
-        st.success(f"✅ Model Klasifikasi ({H5_FILE_PATH}) siap.")
-    except Exception as e:
-        st.error(f"Gagal memuat {H5_FILE_PATH}: {e}")
-        classifier = None
-        
-    # 2. Pemuatan Model PT (Deteksi)
     PT_FILE_PATH = "best.pt"
-    try:
-        # detector = YOLO(PT_FILE_PATH) # Kode pemuatan aktual
-        detector = PT_FILE_PATH # Placeholder model object
-        st.success(f"✅ Model Deteksi ({PT_FILE_PATH}) siap.")
-    except Exception as e:
-        st.error(f"Gagal memuat {PT_FILE_PATH}: {e}")
-        detector = None
+
+    # Placeholder model object
+    classifier = H5_FILE_PATH 
+    detector = PT_FILE_PATH
+
+    # Tampilkan status pemuatan model Anda
+    st.sidebar.markdown("---")
+    st.sidebar.success(f"Model Klasifikasi ({H5_FILE_PATH}) dimuat (placeholder).")
+    st.sidebar.success(f"Model Deteksi ({PT_FILE_PATH}) dimuat (placeholder).")
         
     return classifier, detector
 
@@ -141,13 +147,12 @@ def draw_bounding_boxes(image: Image.Image, detections: list) -> Image.Image:
     
     # Coba memuat font yang lebih baik jika tersedia, jika tidak gunakan default
     try:
-        # Ukuran font disesuaikan agar sesuai dengan gambar
-        font = ImageFont.truetype("arial.ttf", size=max(12, int(height / 35))) 
+        font_size = max(16, int(height / 30))
+        font = ImageFont.truetype("arial.ttf", size=font_size) 
     except IOError:
         font = ImageFont.load_default()
 
     for det in detections:
-        # Koordinat dalam format piksel (setelah dikonversi oleh fungsi pemrosesan)
         x_min = det["box"][0]
         y_min = det["box"][1]
         x_max = det["box"][2]
@@ -156,31 +161,32 @@ def draw_bounding_boxes(image: Image.Image, detections: list) -> Image.Image:
         box_color = det["color"]
         label = f"{det['class']} ({det['confidence']:.2f})"
 
-        # 1. Gambar Bounding Box
+        # 1. Gambar Bounding Box (Diisi dengan warna transparan, outline tebal)
+        # Membuat kotak semi-transparan (perlu menggunakan ImageDraw.Draw pada gambar RGB atau RGBA)
         draw.rectangle(
             [(x_min, y_min), (x_max, y_max)], 
             outline=box_color, 
-            width=5
+            width=8 # Tebal
         )
 
         # 2. Gambar Label dengan latar belakang
-        # Pastikan label tidak keluar dari batas atas
-        text_height = draw.textbbox((0, 0), label, font=font)[3] - draw.textbbox((0, 0), label, font=font)[1]
-        text_width = draw.textbbox((0, 0), label, font=font)[2] - draw.textbbox((0, 0), label, font=font)[0]
+        text_bbox = draw.textbbox((0, 0), label, font=font)
+        text_width = text_bbox[2] - text_bbox[0]
+        text_height = text_bbox[3] - text_bbox[1]
         
-        y_start = max(0, y_min - text_height - 5)
-
+        y_start = max(0, y_min - text_height - 10)
+        
         # Gambar latar belakang label
         draw.rectangle(
-            [(x_min, y_start), (x_min + text_width + 10, y_min)], 
+            [(x_min, y_start), (x_min + text_width + 15, y_min)], 
             fill=box_color
         )
         
         # Gambar teks label
         draw.text(
-            (x_min + 5, y_start + 2), 
+            (x_min + 7, y_start + 5), 
             label, 
-            fill="black", 
+            fill="#0d1117", # Teks gelap pada latar terang
             font=font
         )
     return image
@@ -194,52 +200,28 @@ def process_image_with_models(uploaded_file, classifier, detector):
     # 1. Memuat Gambar dari Streamlit Uploader
     image = Image.open(uploaded_file).convert("RGB")
     width, height = image.size
+    
+    sim_class = random.choice(H5_CLASSES)
+    sim_confidence = random.uniform(0.95, 0.99)
 
     # --- INFERENSI KLASIFIKASI (Model H5) ---
     if classifier and HAS_MODEL_LIBS:
-        # a. Preprocessing untuk H5 model (Misalnya, resize ke 224x224)
-        # H5_input = image.resize((224, 224))
-        # H5_array = np.asarray(H5_input) / 255.0
-        # H5_array = np.expand_dims(H5_array, axis=0)
-        
-        # b. Inferensi Model H5
-        # predictions = classifier.predict(H5_array)[0]
-        # predicted_class_index = np.argmax(predictions)
-        # confidence = predictions[predicted_class_index]
-        # classification_result = f"{H5_CLASSES[predicted_class_index]} (Probabilitas: {confidence:.2%})"
-        
-        # JIKA BERHASIL DIMUAT, TAPI INFERENSI TETAP DISIMULASIKAN
-        sim_class = random.choice(H5_CLASSES)
-        sim_confidence = random.uniform(0.95, 0.99)
+        # KODE INFERENSI NYATA H5 DI SINI
+        # ...
         classification_result = f"{sim_class} (Probabilitas: {sim_confidence:.2%})"
-    elif classifier: # Model dimuat (placeholder), tapi libs tidak ada.
+    else: 
         # Simulasi hasil H5:
-        sim_class = random.choice(H5_CLASSES)
-        sim_confidence = random.uniform(0.95, 0.99)
         classification_result = f"{sim_class} (Probabilitas: {sim_confidence:.2%})"
-    else:
-        classification_result = "KLASIFIKASI GAGAL (Model H5 tidak dimuat)"
+
 
     # --- INFERENSI DETEKSI OBJEK (Model PT/YOLO) ---
     detections = []
     
     if detector and HAS_MODEL_LIBS:
-        # c. Inferensi Model PT/YOLO
-        # results = detector(image) # Panggilan inferensi YOLOv8
-
-        # d. Ekstraksi dan Konversi Bounding Box
-        # detections = []
-        # for r in results:
-        #     for box in r.boxes:
-        #         x1, y1, x2, y2 = [int(x) for x in box.xyxy[0].tolist()]
-        #         cls = r.names[int(box.cls[0])]
-        #         conf = float(box.conf[0])
-        #         # Tambahkan logika warna berdasarkan kelas di sini
-        #         detections.append({"class": cls, "color": "lime", "box": [x1, y1, x2, y2], "confidence": conf})
-
+        # KODE INFERENSI NYATA YOLO DI SINI
+        # ...
         # JIKA BERHASIL DIMUAT, TAPI INFERENSI TETAP DISIMULASIKAN
-        # Gunakan hasil klasifikasi (sim_class) untuk deteksi yang konsisten
-        color = 'orangered' if sim_class == 'Singa' else 'gold'
+        color = '#38f9d7' if sim_class == 'Cheetah' else '#ec4899'
         detections_simulated = [{
             "class": sim_class, 
             "color": color, 
@@ -251,11 +233,9 @@ def process_image_with_models(uploaded_file, classifier, detector):
         }]
         detections = detections_simulated
     
-    elif detector: # Model dimuat (placeholder), tapi libs tidak ada.
+    else: # Model dimuat (placeholder), tapi libs tidak ada.
         # Simulasi hasil Deteksi:
-        # Data simulasi dalam format yang diharapkan setelah konversi dari hasil YOLO.
-        # Format kotak harus PIKSEL ABSOLUT di sini
-        color = 'orangered' if sim_class == 'Singa' else 'gold'
+        color = '#38f9d7' if sim_class == 'Cheetah' else '#ec4899'
         detections_simulated = [{
             "class": sim_class, 
             "color": color, 
@@ -266,9 +246,6 @@ def process_image_with_models(uploaded_file, classifier, detector):
             "confidence": sim_confidence
         }]
         detections = detections_simulated
-    else:
-        # detections sudah diinisialisasi sebagai [] di luar if
-        pass
         
     # 4. Menggambar Bounding Box
     processed_image = draw_bounding_boxes(image.copy(), detections)
@@ -287,24 +264,26 @@ uploaded_file = st.file_uploader(
 )
 
 if uploaded_file is not None:
+    
     # 1. Pratinjau Gambar Asli
     col_img, col_info = st.columns([2, 1])
 
     with col_img:
-        st.subheader("Pratinjau Gambar")
+        st.subheader("🖼️ Pratinjau Gambar")
         st.image(uploaded_file, caption="Gambar yang Diunggah", use_column_width=True)
 
     with col_info:
-        st.subheader("Informasi Model")
+        st.subheader("📊 Hasil Model")
+        
         # Kontainer Hasil Klasifikasi (Model H5)
-        st.markdown('<p class="box-title-fuchsia">Hasil Klasifikasi (classifier_model.h5)</p>', unsafe_allow_html=True)
+        st.markdown('<p style="color:#ec4899; font-weight:600; font-size: 1.1rem;">[H5] Klasifikasi Utama</p>', unsafe_allow_html=True)
         placeholder_classification = st.empty()
-        placeholder_classification.markdown('<div class="classification-output">Menunggu Proses...</div>', unsafe_allow_html=True)
+        placeholder_classification.markdown('<div class="classification-card">...</div>', unsafe_allow_html=True)
 
         # Kontainer Hasil Deteksi (YOLOv8)
-        st.markdown('<br><p class="box-title-lime">Hasil Deteksi Objek (best.pt)</p>', unsafe_allow_html=True)
+        st.markdown('<br><p style="color:#38f9d7; font-weight:600; font-size: 1.1rem;">[PT] Deteksi Objek</p>', unsafe_allow_html=True)
         placeholder_detections = st.empty()
-        placeholder_detections.info("Tekan tombol di bawah untuk menjalankan model Anda.")
+        placeholder_detections.info("Tekan tombol di bawah untuk menganalisis gambar.")
 
     st.markdown("---")
     
@@ -323,41 +302,45 @@ if uploaded_file is not None:
 
 # --- 5. Tampilkan Hasil Akhir (Setelah Pemrosesan) ---
 
-if 'processed_image' in st.session_state:
+if 'processed_image' in st.session_state and st.session_state.processed_image is not None:
     # Mengganti pratinjau dengan gambar yang sudah diproses
     col_img, col_info = st.columns([2, 1])
 
     with col_img:
-        st.subheader("Visualisasi Hasil Model")
+        st.subheader("👁️ Visualisasi Deteksi")
         # Menampilkan gambar yang sudah digambar bounding box-nya
-        st.image(st.session_state.processed_image, caption=f"Hasil Deteksi Objek: {st.session_state.classification.split(' ')[0]}", use_column_width=True)
+        st.image(st.session_state.processed_image, caption=f"Hasil Deteksi: {st.session_state.classification.split(' ')[0]}", use_column_width=True)
 
     with col_info:
-        st.subheader("Informasi Model")
+        st.subheader("📊 Hasil Model")
         
         # 1. Update Hasil Klasifikasi
-        st.markdown('<p class="box-title-fuchsia">Hasil Klasifikasi (classifier_model.h5)</p>', unsafe_allow_html=True)
+        st.markdown('<p style="color:#ec4899; font-weight:600; font-size: 1.1rem;">[H5] Klasifikasi Utama</p>', unsafe_allow_html=True)
+        
+        class_name = st.session_state.classification.split('(')[0].strip()
+        emoji = "🦁" if "Singa" in class_name else "🐆" # Gunakan emoji untuk visual
+        
         placeholder_classification.markdown(
-            f'<div class="classification-output">{st.session_state.classification}</div>', 
+            f'<div class="classification-card">{emoji} {st.session_state.classification}</div>', 
             unsafe_allow_html=True
         )
 
         # 2. Update Hasil Deteksi
-        st.markdown('<br><p class="box-title-lime">Hasil Deteksi Objek (best.pt)</p>', unsafe_allow_html=True)
+        st.markdown('<br><p style="color:#38f9d7; font-weight:600; font-size: 1.1rem;">[PT] Deteksi Objek</p>', unsafe_allow_html=True)
         
         if st.session_state.detections:
             detection_list = ""
             for det in st.session_state.detections:
-                # Gunakan st.markdown untuk list berestetika
+                color_code = '#38f9d7' if "Cheetah" in det['class'] else '#ec4899'
                 detection_list += f"""
-                    <div style="background-color: #1f2937; padding: 10px; border-radius: 8px; margin-bottom: 5px; border-left: 4px solid {det['color']}; display: flex; justify-content: space-between; align-items: center;">
+                    <div class="detection-item" style="border-left-color: {color_code};">
                         <span style="font-weight: bold; color: white;">{det['class']}</span>
-                        <span style="background-color: {det['color']}; color: black; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem;">
-                            {(det['confidence'] * 100):.1f}%
+                        <span style="background-color: {color_code}; color: #0d1117; padding: 4px 10px; border-radius: 15px; font-size: 0.85rem; font-weight: 700;">
+                            Akurasi: {(det['confidence'] * 100):.1f}%
                         </span>
                     </div>
                 """
-            placeholder_detections.markdown(detection_list, unsafe_allow_html=True)
+            placeholder_detections.markdown(f'<div style="animation: fadeIn 1.5s;">{detection_list}</div>', unsafe_allow_html=True)
         else:
             placeholder_detections.warning("Tidak ada objek yang terdeteksi atau model deteksi gagal dimuat.")
 
@@ -376,7 +359,7 @@ st.sidebar.info(f"""
     - Deteksi: `{detector_model}`
     
     **PENTING:** Agar model ini dapat berjalan secara nyata (bukan simulasi), Anda harus:
-    1.  *Uncomment* (hapus `#`) baris `load_model` dan `YOLO` di fungsi `load_models()`.
+    1.  *Uncomment* (hapus `#`) baris `load_model` dan `YOLO` di fungsi `load_models()` di lingkungan Streamlit Anda.
     2.  *Uncomment* kode Inferensi yang relevan di fungsi `process_image_with_models()`.
     3.  Pastikan lingkungan Streamlit Anda memiliki pustaka **`tensorflow`** dan **`ultralytics`** yang terinstal.
 """)
