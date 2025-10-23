@@ -185,8 +185,8 @@ if uploaded_file:
 
 
 # --- 5. TAMPILKAN HASIL AKHIR ---
-if 'processed_image' in st.session_state and st.session_state.processed_image and uploaded_file is None:
-    # Menampilkan hasil setelah pemrosesan pertama (jika user tidak langsung mengupload gambar baru)
+# KOREKSI: Hapus kondisi 'and uploaded_file is None' agar hasil tetap ditampilkan setelah tombol ditekan.
+if 'processed_image' in st.session_state and st.session_state.processed_image:
     
     col_img, col_info = st.columns([2, 1])
     class_name = st.session_state.classification.split('(')[0].strip()
@@ -194,6 +194,7 @@ if 'processed_image' in st.session_state and st.session_state.processed_image an
 
     with col_img:
         st.subheader("👁️ Visualisasi Deteksi")
+        # Pastikan gambar yang ditampilkan adalah hasil yang diproses (st.session_state.processed_image)
         st.image(st.session_state.processed_image, caption=f"Hasil Deteksi: {class_name}", use_column_width=True)
 
     with col_info:
@@ -201,7 +202,8 @@ if 'processed_image' in st.session_state and st.session_state.processed_image an
         
         # 1. Update Hasil Klasifikasi
         st.markdown('<p style="color:#ec4899; font-weight:600; font-size: 1.1rem;">[H5] Klasifikasi Utama</p>', unsafe_allow_html=True)
-        placeholder_classification.markdown(
+        # Gunakan placeholder yang tepat jika diperlukan, atau tampilkan langsung
+        st.markdown(
             f'<div class="classification-card">{emoji} {st.session_state.classification}</div>', 
             unsafe_allow_html=True
         )
@@ -220,4 +222,4 @@ if 'processed_image' in st.session_state and st.session_state.processed_image an
                     </span>
                 </div>
             """
-        placeholder_detections.markdown(f'<div style="animation: fadeIn 1.5s;">{detection_list}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="animation: fadeIn 1.5s;">{detection_list}</div>', unsafe_allow_html=True)
