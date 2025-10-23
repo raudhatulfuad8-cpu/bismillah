@@ -62,16 +62,7 @@ classifier_model, detector_model = load_models()
 # --- TAMPILAN JUDUL UTAMA ---
 st.title("Aplikasi Klasifikasi & Deteksi Objek")
 
-# --- KOTAK PERINGATAN SIMULASI ---
-st.markdown(f"""
-    <div class="simulation-warning">
-        ⚠️ PERINGATAN PENTING: Model (<span style="color: #ffffff;">{classifier_model}</span> & <span style="color: #ffffff;">{detector_model}</span>) 
-        telah diunggah, namun inferensi aktual model pembelajaran mesin berat (TensorFlow/YOLO) 
-        <span style="color: #ffffff;">TIDAK DAPAT DIJALANKAN</span> di lingkungan ini. 
-        Hasil yang ditampilkan adalah <span style="color: #ffffff;">SIMULASI</span> berdasarkan nama file Anda.
-    </div>
-""", unsafe_allow_html=True)
-# --- AKHIR KOTAK PERINGATAN ---
+# KOTAK PERINGATAN SIMULASI (Telah Dihapus)
 
 st.markdown(f"""
     <p class="subheader">
