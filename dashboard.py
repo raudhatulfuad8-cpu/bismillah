@@ -1,354 +1,156 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-# Konfigurasi halaman Streamlit
-st.set_page_config(
-    page_title="Visualisasi Model AI",
-    page_icon="✨",
-    layout="wide"
-)
+# =========================
+# 1️⃣ KONFIGURASI HALAMAN
+# =========================
+st.set_page_config(page_title="Visualisasi Model AI", page_icon="✨", layout="wide")
 
-# Menghilangkan padding atas dan samping default untuk tampilan penuh
 st.markdown("""
-    <style>
-        .reportview-container .main .block-container {
-            padding-top: 1rem;
-            padding-right: 1rem;
-            padding-left: 1rem;
-            padding-bottom: 1rem;
-        }
-    </style>
-    """, unsafe_allow_html=True)
+<style>
+.reportview-container .main .block-container {
+    padding: 1rem;
+}
+</style>
+""", unsafe_allow_html=True)
 
-
-# --- KODE HTML/JS LENGKAP DARI VISUALISASI DI BAWAH INI ---
-# HTML ini ditanamkan menggunakan st.components.v1.html
+# =========================
+# 2️⃣ KONTEN HTML + JS
+# =========================
 html_content = """
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visualisasi Deteksi Objek & Klasifikasi Gambar</title>
-    <!-- Muat Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Konfigurasi Font Inter -->
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0d1117; /* Latar belakang gelap */
-            color: #c9d1d9;
-        }
-        /* Efek glow pada batas card utama */
-        #app {
-            box-shadow: 0 0 25px rgba(255, 105, 180, 0.2); /* Bayangan pink/fuchsia lembut */
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visualisasi AI: Klasifikasi & Deteksi</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+    body { font-family:'Inter',sans-serif; background:#0d1117; color:#c9d1d9; }
+    #app { box-shadow:0 0 25px rgba(255,105,180,0.2); }
+</style>
 </head>
-<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
 
-    <div id="app" class="w-full max-w-4xl bg-gray-900/90 p-6 md:p-10 rounded-xl border border-fuchsia-800/50 transition-all duration-500 hover:shadow-fuchsia-500/30">
-        <h1 class="text-4xl font-extrabold mb-4 text-white text-center tracking-tight">
-            Aplikasi Klasifikasi & Deteksi Objek
-        </h1>
-        <p class="text-center mb-8 text-gray-400">
-            Simulasi visualisasi hasil dari model <span class="text-lime-400 font-semibold">YOLOv8 (.pt)</span> dan <span class="text-fuchsia-400 font-semibold">Classifier (.h5)</span>.
-        </p>
+<body class="min-h-screen flex items-center justify-center p-4 md:p-8">
+<div id="app" class="w-full max-w-4xl bg-gray-900/90 p-8 rounded-xl border border-fuchsia-700/50">
 
-        <!-- Area Unggah File -->
-        <div class="mb-8 p-6 border-2 border-dashed border-pink-500/50 bg-gray-800 rounded-xl hover:border-pink-400 hover:shadow-md hover:shadow-pink-500/20 transition duration-300">
-            <input type="file" id="imageUpload" accept="image/*" class="hidden" onchange="previewImage(event)">
-            <label for="imageUpload" class="cursor-pointer flex flex-col items-center justify-center py-6 text-gray-400">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10 mb-2 text-pink-400 animate-pulse">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
-                </svg>
-                <span class="text-white font-bold text-lg">Klik untuk Unggah Gambar</span>
-                <span class="text-sm">atau seret dan lepas gambar (JPG, PNG)</span>
-            </label>
-        </div>
+    <h1 class="text-3xl font-extrabold text-center mb-2 text-white">Deteksi Objek & Klasifikasi Gambar</h1>
+    <p class="text-center mb-6 text-gray-400">Simulasi hasil model <span class='text-lime-400 font-bold'>YOLOv8</span> & <span class='text-pink-400 font-bold'>Classifier (.h5)</span></p>
 
-        <!-- Area Tampilan Gambar dan Hasil -->
-        <div id="resultsArea" class="hidden">
-            <div class="relative mb-8 rounded-xl overflow-hidden border border-gray-700 shadow-xl shadow-gray-700/20">
-                <img id="uploadedImage" src="#" alt="Gambar Terunggah" class="w-full h-auto object-contain max-h-[500px]">
-                <canvas id="detectionCanvas" class="absolute top-0 left-0 w-full h-full"></canvas>
-            </div>
-
-            <div class="flex flex-col md:flex-row gap-6">
-                <!-- Klasifikasi Gambar (H5 Model) -->
-                <div class="flex-1 p-5 bg-gray-800 rounded-xl border border-fuchsia-600/50 shadow-lg shadow-fuchsia-500/10">
-                    <h2 class="text-xl font-semibold mb-3 text-fuchsia-400">1. Hasil Klasifikasi Gambar (.h5)</h2>
-                    <p class="text-sm text-gray-500 mb-4">Klasifikasi Kategori Global (Classifier Model)</p>
-                    <div id="classificationResult" class="text-3xl font-extrabold text-white bg-fuchsia-800/50 p-4 rounded-xl text-center border-2 border-fuchsia-500/80">
-                        Memuat...
-                    </div>
-                </div>
-
-                <!-- Deteksi Objek (YOLOv8 Model) -->
-                <div class="flex-1 p-5 bg-gray-800 rounded-xl border border-lime-600/50 shadow-lg shadow-lime-500/10">
-                    <h2 class="text-xl font-semibold mb-3 text-lime-400">2. Hasil Deteksi Objek (YOLOv8)</h2>
-                    <p class="text-sm text-gray-500 mb-4">Objek yang Ditemukan dan Lokasinya (HANYA Singa atau Cheetah)</p>
-                    <ul id="detectionList" class="space-y-3 max-h-40 overflow-y-auto">
-                        <!-- Hasil deteksi akan dimasukkan di sini -->
-                        <li class="text-white text-lg text-center py-4">Memuat...</li>
-                    </ul>
-                </div>
-            </div>
-
-            <!-- Tombol Proses dengan Gradien -->
-            <button id="processButton" onclick="processImage()" class="w-full mt-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-extrabold text-lg rounded-xl transition duration-300 shadow-xl shadow-pink-500/50 disabled:opacity-50 disabled:shadow-none" disabled>
-                <span id="buttonText">Luncurkan Pemrosesan Model</span>
-                <span id="loadingSpinner" class="hidden">
-                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Memproses (Simulasi Model)...
-                </span>
-            </button>
-        </div>
-
-        <!-- Pesan Modal untuk Simulasi -->
-        <div id="messageBox" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center p-4 z-50">
-            <div class="bg-gray-800 p-8 rounded-xl border border-lime-500 shadow-2xl max-w-sm text-center">
-                <p id="messageContent" class="text-xl font-bold text-lime-400 mb-4"></p>
-                <button onclick="document.getElementById('messageBox').classList.add('hidden')" class="bg-lime-600 hover:bg-lime-700 text-black font-semibold py-2 px-6 rounded-lg transition duration-300">Oke, Mengerti</button>
-            </div>
-        </div>
-
+    <!-- Upload Gambar -->
+    <div class="border-2 border-dashed border-pink-500/50 rounded-xl p-6 mb-6 text-center bg-gray-800 hover:border-pink-400 cursor-pointer transition" onclick="document.getElementById('imageInput').click()">
+        <input id="imageInput" type="file" accept="image/*" class="hidden" onchange="previewImage(event)">
+        <p class="text-gray-300 font-semibold">Klik untuk unggah gambar (JPG/PNG)</p>
     </div>
 
-    <script>
-        // Variabel global
-        let uploadedImageElement;
-        let detectionCanvas;
-        let processButton;
-        let classificationResultElement;
-        let detectionListElement;
-        let resultsArea;
-        let uploadedFile;
+    <!-- Area Hasil -->
+    <div id="resultArea" class="hidden space-y-6">
+        <div class="relative border border-gray-700 rounded-xl overflow-hidden">
+            <img id="preview" class="w-full max-h-[400px] object-contain">
+            <canvas id="canvas" class="absolute top-0 left-0 w-full h-full"></canvas>
+        </div>
 
-        // Data simulasi (Mock Data) yang hanya memiliki Singa ATAU Cheetah
-        const mockScenarios = [
-            {
-                name: "Singa Tunggal",
-                classification: "Singa (Probabilitas: 99.8%)",
-                detections: [
-                    // Deteksi Singa
-                    { class: 'Singa', color: '#FF4500', box: [200, 300, 750, 700], confidence: 0.98 }, 
-                ]
-            },
-            {
-                name: "Cheetah Berburu",
-                classification: "Cheetah (Probabilitas: 97.5%)",
-                detections: [
-                    // Deteksi Cheetah
-                    { class: 'Cheetah', color: '#FFD700', box: [150, 450, 800, 850], confidence: 0.95 },
-                ]
-            }
-        ];
+        <div class="grid md:grid-cols-2 gap-4">
+            <div class="bg-gray-800 border border-fuchsia-600/50 p-4 rounded-xl">
+                <h2 class="text-fuchsia-400 font-bold mb-2">Klasifikasi (.h5)</h2>
+                <div id="classResult" class="text-center text-2xl bg-gray-700/30 p-3 rounded-lg">Menunggu...</div>
+            </div>
+            <div class="bg-gray-800 border border-lime-600/50 p-4 rounded-xl">
+                <h2 class="text-lime-400 font-bold mb-2">Deteksi Objek (YOLOv8)</h2>
+                <ul id="detectList" class="space-y-2 max-h-32 overflow-y-auto text-sm text-gray-300">Menunggu...</ul>
+            </div>
+        </div>
 
-        document.addEventListener('DOMContentLoaded', () => {
-            uploadedImageElement = document.getElementById('uploadedImage');
-            detectionCanvas = document.getElementById('detectionCanvas');
-            processButton = document.getElementById('processButton');
-            classificationResultElement = document.getElementById('classificationResult');
-            detectionListElement = document.getElementById('detectionList');
-            resultsArea = document.getElementById('resultsArea');
-        });
+        <button id="processBtn" class="w-full py-3 mt-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl shadow-md hover:shadow-lg disabled:opacity-50" disabled onclick="processImage()">🚀 Proses Gambar</button>
+    </div>
 
-        // Fungsi untuk menampilkan pesan modal (pengganti alert())
-        function showMessage(content) {
-            document.getElementById('messageContent').textContent = content;
-            document.getElementById('messageBox').classList.remove('hidden');
-            document.getElementById('messageBox').classList.add('flex');
-        }
+    <!-- Modal Notifikasi -->
+    <div id="modal" class="hidden fixed inset-0 bg-black/70 items-center justify-center">
+        <div class="bg-gray-800 border border-lime-500 p-6 rounded-xl text-center">
+            <p id="modalText" class="text-lg font-bold text-lime-400 mb-3"></p>
+            <button onclick="hideModal()" class="bg-lime-600 text-black px-4 py-2 rounded-lg">OK</button>
+        </div>
+    </div>
+</div>
 
-        // 1. Pratinjau Gambar dan Set up UI
-        function previewImage(event) {
-            uploadedFile = event.target.files[0];
-            if (uploadedFile) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    // Tampilkan area hasil
-                    resultsArea.classList.remove('hidden');
+<script>
+const scenarios = [
+    { label:'Singa', color:'#FF4500', prob:'99.8%', box:[200,300,750,700] },
+    { label:'Cheetah', color:'#FFD700', prob:'97.5%', box:[150,450,800,850] }
+];
+let imgEl, canvas, ctx, resultArea, btn;
 
-                    // Set sumber gambar
-                    uploadedImageElement.src = e.target.result;
+document.addEventListener('DOMContentLoaded',()=>{
+    imgEl=document.getElementById('preview');
+    canvas=document.getElementById('canvas');
+    ctx=canvas.getContext('2d');
+    resultArea=document.getElementById('resultArea');
+    btn=document.getElementById('processBtn');
+});
 
-                    // Bersihkan canvas
-                    const ctx = detectionCanvas.getContext('2d');
-                    ctx.clearRect(0, 0, detectionCanvas.width, detectionCanvas.height);
+function previewImage(e){
+    const file=e.target.files[0];
+    if(!file)return;
+    const reader=new FileReader();
+    reader.onload=(x)=>{
+        imgEl.src=x.target.result;
+        resultArea.classList.remove('hidden');
+        document.getElementById('classResult').textContent='Menunggu...';
+        document.getElementById('detectList').innerHTML='<li>Tekan tombol proses untuk menjalankan simulasi.</li>';
+        btn.disabled=false;
+    };
+    reader.readAsDataURL(file);
+}
 
-                    // Bersihkan hasil sebelumnya
-                    classificationResultElement.textContent = 'Menunggu Pemrosesan...';
-                    classificationResultElement.classList.remove('bg-fuchsia-800/50', 'border-fuchsia-500/80');
-                    classificationResultElement.classList.add('bg-gray-700/30', 'border-gray-600');
-                    detectionListElement.innerHTML = '<li class="text-gray-400 text-md text-center py-4">Tekan tombol proses untuk menjalankan simulasi model.</li>';
+function processImage(){
+    btn.disabled=true;
+    const choice=scenarios[Math.floor(Math.random()*scenarios.length)];
+    setTimeout(()=>{
+        // tampilkan hasil klasifikasi
+        document.getElementById('classResult').textContent=`${choice.label} (${choice.prob})`;
+        // tampilkan hasil deteksi
+        document.getElementById('detectList').innerHTML=`
+            <li class="flex justify-between p-2 bg-gray-700/50 rounded-md border-l-4" style="border-color:${choice.color}">
+                <span>${choice.label}</span><span class="font-mono">${choice.prob}</span>
+            </li>`;
+        drawBox(choice);
+        showModal("✅ Pemrosesan selesai! Hasil simulasi ditampilkan.");
+        btn.disabled=false;
+    },2500);
+}
 
-                    // Aktifkan tombol proses
-                    processButton.disabled = false;
-                    document.getElementById('buttonText').classList.remove('hidden');
-                    document.getElementById('loadingSpinner').classList.add('hidden');
+function drawBox(obj){
+    setCanvas();
+    ctx.strokeStyle=obj.color; ctx.lineWidth=3;
+    const [x1,y1,x2,y2]=obj.box.map(v=>v*(canvas.width/1000));
+    ctx.strokeRect(x1,y1,x2-x1,y2-y1);
+    ctx.fillStyle=obj.color; ctx.font='bold 14px Inter';
+    ctx.fillRect(x1,y1-22,ctx.measureText(obj.label).width+12,20);
+    ctx.fillStyle='#000'; ctx.fillText(obj.label,x1+4,y1-8);
+}
 
-                    // Tunggu gambar dimuat untuk mendapatkan dimensi
-                    uploadedImageElement.onload = () => {
-                        // Pastikan canvas berukuran sama dengan gambar
-                        setCanvasSize();
-                    };
-                }
-                reader.readAsDataURL(uploadedFile);
-            }
-        }
+function setCanvas(){
+    canvas.width=imgEl.offsetWidth;
+    canvas.height=imgEl.offsetHeight;
+}
 
-        function setCanvasSize() {
-            // Dapatkan dimensi gambar yang ditampilkan (penting untuk responsivitas)
-            const imgWidth = uploadedImageElement.offsetWidth;
-            const imgHeight = uploadedImageElement.offsetHeight;
-
-            // Set dimensi canvas
-            detectionCanvas.width = imgWidth;
-            detectionCanvas.height = imgHeight;
-            // Posisi sudah diatur oleh CSS: absolute top-0 left-0
-        }
-
-        window.addEventListener('resize', () => {
-            if (uploadedFile) {
-                setCanvasSize();
-                // Jika sudah diproses, gambar ulang kotak deteksi
-                if (classificationResultElement.textContent !== 'Menunggu Pemrosesan...') {
-                    // Perlu mendapatkan mockResults yang digunakan terakhir kali
-                    // Untuk kesederhanaan, kita akan memproses ulang dengan skenario acak
-                    // Tetapi dalam aplikasi nyata, Anda akan menyimpan hasil terakhir di variabel global.
-                    // Karena ini simulasi, kita biarkan saja (pengguna akan memproses ulang)
-                }
-            }
-        });
-
-        // 2. Simulasi Pemrosesan Gambar (Menggantikan Panggilan API Model Sebenarnya)
-        function processImage() {
-            if (!uploadedFile) {
-                showMessage("Silakan unggah gambar terlebih dahulu.");
-                return;
-            }
-
-            // Tampilkan loading state
-            processButton.disabled = true;
-            document.getElementById('buttonText').classList.add('hidden');
-            document.getElementById('loadingSpinner').classList.remove('hidden');
-            detectionListElement.innerHTML = '<li class="text-center text-sm text-pink-400 py-2">Model sedang menganalisis gambar dengan energi penuh...</li>';
-            classificationResultElement.textContent = 'Sedang Dihitung...';
-            classificationResultElement.classList.remove('bg-fuchsia-800/50', 'border-fuchsia-500/80');
-            classificationResultElement.classList.add('bg-gray-700/30', 'border-gray-600');
-            
-            // Simulasi waktu pemrosesan 3 detik
-            setTimeout(() => {
-                // Sembunyikan loading state
-                processButton.disabled = false;
-                document.getElementById('buttonText').classList.remove('hidden');
-                document.getElementById('loadingSpinner').classList.add('hidden');
-
-                // *** LOGIKA KHUSUS: Pilih skenario Singa atau Cheetah secara acak ***
-                const mockResults = mockScenarios[Math.floor(Math.random() * mockScenarios.length)];
-                
-                // Tampilkan hasil Klasifikasi (Model H5)
-                classificationResultElement.textContent = mockResults.classification;
-                classificationResultElement.classList.remove('bg-gray-700/30', 'border-gray-600');
-                classificationResultElement.classList.add('bg-fuchsia-800/50', 'border-fuchsia-500/80');
-
-                // Tampilkan hasil Deteksi Objek (YOLOv8)
-                displayDetectionList(mockResults.detections);
-                
-                // Gambar bounding boxes di canvas
-                drawBoundingBoxes(mockResults.detections);
-
-                showMessage("🎉 Pemrosesan Selesai! Visualisasi hasil model telah ditampilkan.");
-
-            }, 3000); // Simulasi waktu proses
-        }
-
-        // 3. Tampilkan Daftar Deteksi (YOLOv8)
-        function displayDetectionList(detections) {
-            detectionListElement.innerHTML = '';
-            if (detections.length === 0) {
-                detectionListElement.innerHTML = '<li class="text-sm text-gray-500 py-2">Tidak ada objek yang terdeteksi dengan tingkat kepercayaan yang cukup.</li>';
-                return;
-            }
-
-            detections.forEach(detection => {
-                const li = document.createElement('li');
-                // Menggunakan warna latar belakang yang lebih gelap dan warna border yang sesuai dengan warna deteksi
-                li.className = 'flex justify-between items-center p-3 bg-gray-700/50 rounded-lg border-l-4';
-                li.style.borderColor = detection.color;
-
-                li.innerHTML = `
-                    <span class="font-bold text-white">${detection.class}</span>
-                    <span class="text-xs font-mono px-3 py-1 rounded-full text-black" style="background-color: ${detection.color};">
-                        ${(detection.confidence * 100).toFixed(1)}%
-                    </span>
-                `;
-                detectionListElement.appendChild(li);
-            });
-        }
-
-        // 4. Gambar Bounding Boxes di Canvas
-        function drawBoundingBoxes(detections) {
-            if (!uploadedImageElement.complete) {
-                uploadedImageElement.onload = () => drawBoundingBoxes(detections);
-                return;
-            }
-            
-            setCanvasSize();
-            const ctx = detectionCanvas.getContext('2d');
-            const canvasWidth = detectionCanvas.width; // Ukuran tampilan gambar
-            const canvasHeight = detectionCanvas.height;
-
-            ctx.clearRect(0, 0, canvasWidth, canvasHeight); // Bersihkan canvas
-
-            detections.forEach(detection => {
-                // Koordinat kotak: [x_min, y_min, x_max, y_max] (dari 0 hingga 1000 dalam mock data)
-                // Ubah ke koordinat piksel tampilan
-                const x = detection.box[0] * (canvasWidth / 1000);
-                const y = detection.box[1] * (canvasHeight / 1000);
-                const w = (detection.box[2] - detection.box[0]) * (canvasWidth / 1000);
-                const h = (detection.box[3] - detection.box[1]) * (canvasHeight / 1000);
-
-                // Gambar Bounding Box
-                ctx.strokeStyle = detection.color;
-                ctx.lineWidth = 3;
-                ctx.strokeRect(x, y, w, h);
-
-                // Gambar Label
-                const label = `${detection.class} ${(detection.confidence * 100).toFixed(1)}%`;
-                ctx.font = '700 14px Inter'; // Font tebal
-                
-                // Ukur teks untuk kotak latar belakang
-                const textMetrics = ctx.measureText(label);
-                const textWidth = textMetrics.width;
-                const textHeight = 20;
-
-                // Kotak latar belakang label
-                ctx.fillStyle = detection.color;
-                ctx.fillRect(x - 1, y - textHeight, textWidth + 10, textHeight);
-
-                // Teks Label
-                ctx.fillStyle = '#0d1117'; // Teks hitam untuk kontras maksimum
-                ctx.fillText(label, x + 4, y - 5);
-            });
-        }
-    </script>
+function showModal(t){document.getElementById('modalText').textContent=t;document.getElementById('modal').classList.remove('hidden');document.getElementById('modal').classList.add('flex');}
+function hideModal(){document.getElementById('modal').classList.add('hidden');}
+</script>
 </body>
 </html>
 """
 
-# Tanamkan konten HTML ke Streamlit
-components.html(html_content, height=1000, scrolling=True)
+# =========================
+# 3️⃣ TAMPILKAN DI STREAMLIT
+# =========================
+components.html(html_content, height=900, scrolling=True)
 
-# Menambahkan Catatan Streamlit di bawah
 st.markdown("""
-    ---
-    <p class="text-sm text-gray-500 text-center">
-        *Visualisasi ini disematkan ke dalam Streamlit menggunakan `st.components.v1.html`. Simulasi model sekarang secara acak akan menampilkan hasil klasifikasi dan deteksi **hanya untuk Singa ATAU Cheetah** setiap kali Anda memproses gambar.
-    </p>
+---
+<p style="text-align:center;color:gray;font-size:13px">
+Visualisasi ini merupakan simulasi. Hasil deteksi ditampilkan acak untuk <b>Singa</b> atau <b>Cheetah</b>.<br>
+Ditanam menggunakan <code>st.components.v1.html()</code>.
+</p>
 """, unsafe_allow_html=True)
