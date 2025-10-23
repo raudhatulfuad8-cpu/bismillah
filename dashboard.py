@@ -351,18 +351,3 @@ else:
     # Inisialisasi state jika belum ada
     if 'processed_image' not in st.session_state:
         st.session_state.processed_image = None
-
-
-# --- 6. Footer ---
-
-st.sidebar.markdown("# Petunjuk")
-st.sidebar.info(f"""
-    Aplikasi ini telah dimodifikasi untuk memuat file model Anda yang diunggah: 
-    - Klasifikasi: `{classifier_model}`
-    - Deteksi: `{detector_model}`
-    
-    **PENTING:** Agar model ini dapat berjalan secara nyata (bukan simulasi), Anda harus:
-    1.  *Uncomment* (hapus `#`) baris `load_model` dan `YOLO` di fungsi `load_models()` di lingkungan Streamlit Anda.
-    2.  *Uncomment* kode Inferensi yang relevan di fungsi `process_image_with_models()`.
-    3.  Pastikan lingkungan Streamlit Anda memiliki pustaka **`tensorflow`** dan **`ultralytics`** yang terinstal.
-""")
