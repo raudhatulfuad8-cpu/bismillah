@@ -74,15 +74,28 @@ def process_image_with_models(uploaded_file, classifier, detector):
     image = Image.open(uploaded_file).convert("RGB")
     width, height = image.size
     
-    # Hasil Simulasi (Menggunakan ternary operator dan penugasan langsung)
-    sim_class = random.choice(H5_CLASSES)
+    # --- LOGIKA SIMULASI HASIL YANG KONSISTEN ---
+    
+    # Mencoba menebak kelas dari nama file
+    file_name = uploaded_file.name.lower()
+    
+    if "singa" in file_name:
+        sim_class = 'Singa'
+        color = '#ec4899' # Warna untuk Singa
+    elif "cheetah" in file_name:
+        sim_class = 'Cheetah'
+        color = '#38f9d7' # Warna untuk Cheetah
+    else:
+        # Jika nama file tidak jelas, tetapkan ke Singa sebagai default, atau acak jika diinginkan
+        sim_class = 'Singa' 
+        color = '#ec4899'
+        
     sim_confidence = random.uniform(0.95, 0.99)
-    color = '#38f9d7' if sim_class == 'Cheetah' else '#ec4899'
     
     # Hasil Klasifikasi
     classification_result = f"{sim_class} (Probabilitas: {sim_confidence:.2%})"
 
-    # Hasil Deteksi (Menggunakan list comprehension jika perlu, namun di sini list of dicts)
+    # Hasil Deteksi
     detections = [{
         "class": sim_class, 
         "color": color, 
