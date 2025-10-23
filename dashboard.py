@@ -105,10 +105,11 @@ st.markdown("""
 @st.cache_resource
 def load_models():
     """Memuat model H5 dan PT hanya sekali menggunakan Streamlit caching."""
-    if HAS_MODEL_LIBS:
-        st.success("✅ Pustaka ML (TensorFlow/Ultralytics) terdeteksi. Siap untuk inferensi nyata!")
-    else:
-        st.error("Peringatan: Pustaka TensorFlow/Ultralytics tidak ditemukan. Inferensi model akan disimulasikan.")
+    # Menghapus seluruh pesan st.success/st.error tentang Pustaka ML dari sidebar/main page
+    # if HAS_MODEL_LIBS:
+    #     st.success("✅ Pustaka ML (TensorFlow/Ultralytics) terdeteksi. Siap untuk inferensi nyata!")
+    # else:
+    #     st.error("Peringatan: Pustaka TensorFlow/Ultralytics tidak ditemukan. Inferensi model akan disimulasikan.")
 
     # Catatan: Kami hanya menggunakan path file sebagai placeholder.
     H5_FILE_PATH = "classifier_model.h5"
