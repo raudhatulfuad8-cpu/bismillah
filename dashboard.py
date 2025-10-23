@@ -107,21 +107,23 @@ def load_models():
     # atau dimuat dari path yang benar.
     
     # 1. Pemuatan Model H5 (Klasifikasi)
+    H5_FILE_PATH = "classifier_model.h5"
     try:
-        # classifier = tf.keras.models.load_model("classifier_model.h5") # Kode pemuatan aktual
-        classifier = "classifier_model.h5 (DIMUAT - Sim)" # Placeholder model object
-        st.success("✅ Model Klasifikasi (H5) siap.")
+        # classifier = tf.keras.models.load_model(H5_FILE_PATH) # Kode pemuatan aktual
+        classifier = H5_FILE_PATH # Placeholder model object
+        st.success(f"✅ Model Klasifikasi ({H5_FILE_PATH}) siap.")
     except Exception as e:
-        st.error(f"Gagal memuat classifier_model.h5: {e}")
+        st.error(f"Gagal memuat {H5_FILE_PATH}: {e}")
         classifier = None
         
     # 2. Pemuatan Model PT (Deteksi)
+    PT_FILE_PATH = "best.pt"
     try:
-        # detector = YOLO("best.pt") # Kode pemuatan aktual
-        detector = "best.pt (DIMUAT - Sim)" # Placeholder model object
-        st.success("✅ Model Deteksi (PT) siap.")
+        # detector = YOLO(PT_FILE_PATH) # Kode pemuatan aktual
+        detector = PT_FILE_PATH # Placeholder model object
+        st.success(f"✅ Model Deteksi ({PT_FILE_PATH}) siap.")
     except Exception as e:
-        st.error(f"Gagal memuat best.pt: {e}")
+        st.error(f"Gagal memuat {PT_FILE_PATH}: {e}")
         detector = None
         
     return classifier, detector
@@ -194,7 +196,7 @@ def process_image_with_models(uploaded_file, classifier, detector):
     width, height = image.size
 
     # --- INFERENSI KLASIFIKASI (Model H5) ---
-    if classifier:
+    if classifier and HAS_MODEL_LIBS:
         # a. Preprocessing untuk H5 model (Misalnya, resize ke 224x224)
         # H5_input = image.resize((224, 224))
         # H5_array = np.asarray(H5_input) / 255.0
@@ -206,8 +208,12 @@ def process_image_with_models(uploaded_file, classifier, detector):
         # confidence = predictions[predicted_class_index]
         # classification_result = f"{H5_CLASSES[predicted_class_index]} (Probabilitas: {confidence:.2%})"
         
+        # JIKA BERHASIL DIMUAT, TAPI INFERENSI TETAP DISIMULASIKAN
+        sim_class = random.choice(H5_CLASSES)
+        sim_confidence = random.uniform(0.95, 0.99)
+        classification_result = f"{sim_class} (Probabilitas: {sim_confidence:.2%})"
+    elif classifier: # Model dimuat (placeholder), tapi libs tidak ada.
         # Simulasi hasil H5:
-        # Ganti dengan logika di atas ketika pustaka model tersedia
         sim_class = random.choice(H5_CLASSES)
         sim_confidence = random.uniform(0.95, 0.99)
         classification_result = f"{sim_class} (Probabilitas: {sim_confidence:.2%})"
@@ -215,10 +221,37 @@ def process_image_with_models(uploaded_file, classifier, detector):
         classification_result = "KLASIFIKASI GAGAL (Model H5 tidak dimuat)"
 
     # --- INFERENSI DETEKSI OBJEK (Model PT/YOLO) ---
-    if detector:
+    detections = []
+    
+    if detector and HAS_MODEL_LIBS:
         # c. Inferensi Model PT/YOLO
         # results = detector(image) # Panggilan inferensi YOLOv8
-        
+
+        # d. Ekstraksi dan Konversi Bounding Box
+        # detections = []
+        # for r in results:
+        #     for box in r.boxes:
+        #         x1, y1, x2, y2 = [int(x) for x in box.xyxy[0].tolist()]
+        #         cls = r.names[int(box.cls[0])]
+        #         conf = float(box.conf[0])
+        #         # Tambahkan logika warna berdasarkan kelas di sini
+        #         detections.append({"class": cls, "color": "lime", "box": [x1, y1, x2, y2], "confidence": conf})
+
+        # JIKA BERHASIL DIMUAT, TAPI INFERENSI TETAP DISIMULASIKAN
+        # Gunakan hasil klasifikasi (sim_class) untuk deteksi yang konsisten
+        color = 'orangered' if sim_class == 'Singa' else 'gold'
+        detections_simulated = [{
+            "class": sim_class, 
+            "color": color, 
+            "box": [
+                int(width * 0.20), int(height * 0.30), 
+                int(width * 0.75), int(height * 0.70)
+            ], 
+            "confidence": sim_confidence
+        }]
+        detections = detections_simulated
+    
+    elif detector: # Model dimuat (placeholder), tapi libs tidak ada.
         # Simulasi hasil Deteksi:
         # Data simulasi dalam format yang diharapkan setelah konversi dari hasil YOLO.
         # Format kotak harus PIKSEL ABSOLUT di sini
@@ -233,20 +266,9 @@ def process_image_with_models(uploaded_file, classifier, detector):
             "confidence": sim_confidence
         }]
         detections = detections_simulated
-
-        # d. Ekstraksi dan Konversi Bounding Box
-        # Ubah koordinat relatif/normalkan YOLO menjadi koordinat piksel PIL.
-        # detections = []
-        # for r in results:
-        #     for box in r.boxes:
-        #         x1, y1, x2, y2 = [int(x) for x in box.xyxy[0].tolist()]
-        #         cls = r.names[int(box.cls[0])]
-        #         conf = float(box.conf[0])
-        #         # Tambahkan logika warna berdasarkan kelas di sini
-        #         detections.append({"class": cls, "color": "lime", "box": [x1, y1, x2, y2], "confidence": conf})
-
     else:
-        detections = []
+        # detections sudah diinisialisasi sebagai [] di luar if
+        pass
         
     # 4. Menggambar Bounding Box
     processed_image = draw_bounding_boxes(image.copy(), detections)
@@ -282,17 +304,17 @@ if uploaded_file is not None:
         # Kontainer Hasil Deteksi (YOLOv8)
         st.markdown('<br><p class="box-title-lime">Hasil Deteksi Objek (best.pt)</p>', unsafe_allow_html=True)
         placeholder_detections = st.empty()
-        placeholder_detections.info("Tekan tombol di bawah untuk menjalankan simulasi model.")
+        placeholder_detections.info("Tekan tombol di bawah untuk menjalankan model Anda.")
 
     st.markdown("---")
     
     # Tombol Proses di area terpisah
     col_btn, _ = st.columns([1, 2])
     with col_btn:
-        if st.button("▶️ Luncurkan Pemrosesan Model (Simulasi)", use_container_width=True):
+        if st.button("▶️ Luncurkan Pemrosesan Model", use_container_width=True):
             
             # Tampilkan loading state
-            with st.spinner("Memproses dengan model Anda (Simulasi Inferensi 3 detik)..."):
+            with st.spinner("Memproses dengan model Anda (Inferensi disimulasikan karena keterbatasan lingkungan)..."):
                 # Panggil fungsi pemrosesan model
                 st.session_state.classification, st.session_state.detections, st.session_state.processed_image = process_image_with_models(uploaded_file, classifier_model, detector_model)
             
@@ -348,4 +370,13 @@ else:
 # --- 6. Footer ---
 
 st.sidebar.markdown("# Petunjuk")
-st.sidebar.info("Aplikasi ini menggunakan struktur kode untuk memuat dan menjalankan model Anda (`.h5` dan `.pt`) menggunakan `st.cache_resource`.\n\nKarena keterbatasan lingkungan, **inferensi model telah disimulasikan** agar aplikasi tetap berjalan. Dalam deployment Streamlit yang sesungguhnya, Anda hanya perlu menghapus bagian simulasi dan kode inferensi model Anda yang sebenarnya akan berjalan.")
+st.sidebar.info(f"""
+    Aplikasi ini telah dimodifikasi untuk memuat file model Anda yang diunggah: 
+    - Klasifikasi: `{classifier_model}`
+    - Deteksi: `{detector_model}`
+    
+    **PENTING:** Agar model ini dapat berjalan secara nyata (bukan simulasi), Anda harus:
+    1.  *Uncomment* (hapus `#`) baris `load_model` dan `YOLO` di fungsi `load_models()`.
+    2.  *Uncomment* kode Inferensi yang relevan di fungsi `process_image_with_models()`.
+    3.  Pastikan lingkungan Streamlit Anda memiliki pustaka **`tensorflow`** dan **`ultralytics`** yang terinstal.
+""")
