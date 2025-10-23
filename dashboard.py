@@ -1,4 +1,30 @@
+import streamlit as st
+import streamlit.components.v1 as components
 
+# Konfigurasi halaman Streamlit
+st.set_page_config(
+    page_title="Visualisasi Model AI",
+    page_icon="✨",
+    layout="wide"
+)
+
+# Menghilangkan padding atas dan samping default untuk tampilan penuh
+st.markdown("""
+    <style>
+        .reportview-container .main .block-container {
+            padding-top: 1rem;
+            padding-right: 1rem;
+            padding-left: 1rem;
+            padding-bottom: 1rem;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+
+# --- KODE HTML/JS LENGKAP DARI VISUALISASI DI BAWAH INI ---
+# HTML ini ditanamkan menggunakan st.components.v1.html
+html_content = """
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -303,3 +329,15 @@
     </script>
 </body>
 </html>
+"""
+
+# Tanamkan konten HTML ke Streamlit
+components.html(html_content, height=1000, scrolling=True)
+
+# Menambahkan Catatan Streamlit di bawah
+st.markdown("""
+    ---
+    <p class="text-sm text-gray-500 text-center">
+        *Visualisasi ini disematkan ke dalam Streamlit menggunakan `st.components.v1.html`. Semua fungsionalitas (unggah gambar, simulasi pemrosesan) dijalankan oleh JavaScript di sisi klien (browser).
+    </p>
+""", unsafe_allow_html=True)
