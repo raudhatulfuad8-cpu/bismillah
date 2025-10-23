@@ -37,6 +37,16 @@ st.markdown("""
             color: #c9d1d9;
             font-size: 1.1rem;
         }
+        /* Gaya untuk Peringatan Simulasi */
+        .simulation-warning {
+            background-color: #4a191f; /* Dark red/maroon background */
+            color: #ff9999; /* Light red text */
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 5px solid #ec4899;
+            font-weight: bold;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -44,13 +54,25 @@ st.markdown("""
 # --- 2. PEMUATAN MODEL DENGAN CACHING ---
 @st.cache_resource
 def load_models():
-    """Memuat model placeholder."""
+    """Memuat nama file model placeholder."""
     return "classifier_model.h5", "best.pt"
 
 classifier_model, detector_model = load_models()
 
 # --- TAMPILAN JUDUL UTAMA ---
 st.title("Aplikasi Klasifikasi & Deteksi Objek")
+
+# --- KOTAK PERINGATAN SIMULASI ---
+st.markdown(f"""
+    <div class="simulation-warning">
+        ⚠️ PERINGATAN PENTING: Model (<span style="color: #ffffff;">{classifier_model}</span> & <span style="color: #ffffff;">{detector_model}</span>) 
+        telah diunggah, namun inferensi aktual model pembelajaran mesin berat (TensorFlow/YOLO) 
+        <span style="color: #ffffff;">TIDAK DAPAT DIJALANKAN</span> di lingkungan ini. 
+        Hasil yang ditampilkan adalah <span style="color: #ffffff;">SIMULASI</span> berdasarkan nama file Anda.
+    </div>
+""", unsafe_allow_html=True)
+# --- AKHIR KOTAK PERINGATAN ---
+
 st.markdown(f"""
     <p class="subheader">
         Penganalisis Hewan Buas Canggih: Memuat Model 
@@ -92,7 +114,7 @@ def process_image_with_models(uploaded_file, classifier, detector):
     image = Image.open(uploaded_file).convert("RGB")
     width, height = image.size
     
-    # --- LOGIKA SIMULASI HASIL YANG KONSISTEN ---
+    # --- LOGIKA SIMULASI HASIL YANG KONSISTEN (Menggunakan nama file) ---
     
     # Mencoba menebak kelas dari nama file
     file_name = uploaded_file.name.lower()
@@ -185,7 +207,6 @@ if uploaded_file:
 
 
 # --- 5. TAMPILKAN HASIL AKHIR ---
-# KOREKSI: Hapus kondisi 'and uploaded_file is None' agar hasil tetap ditampilkan setelah tombol ditekan.
 if 'processed_image' in st.session_state and st.session_state.processed_image:
     
     col_img, col_info = st.columns([2, 1])
