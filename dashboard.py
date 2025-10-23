@@ -99,15 +99,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("Aplikasi Klasifikasi & Deteksi Objek")
-st.markdown(f"""
-    <p class="subheader">
-        Penganalisis Hewan Buas Canggih: Memuat Model 
-        <span style="color:#38f9d7; font-weight:bold;">YOLOv8 ({detector_model})</span> & 
-        <span style="color:#ec4899; font-weight:bold;">Classifier ({classifier_model})</span>
-    </p>
-""", unsafe_allow_html=True)
-
 
 # --- 2. Pemuatan Model dengan Caching ---
 
@@ -136,6 +127,18 @@ def load_models():
 
 # Muat model di awal aplikasi
 classifier_model, detector_model = load_models()
+
+
+# --- Tampilkan Judul Utama setelah Model dimuat ---
+# Perbaikan: Variabel model sekarang sudah didefinisikan di sini.
+st.title("Aplikasi Klasifikasi & Deteksi Objek")
+st.markdown(f"""
+    <p class="subheader">
+        Penganalisis Hewan Buas Canggih: Memuat Model 
+        <span style="color:#38f9d7; font-weight:bold;">YOLOv8 ({detector_model})</span> & 
+        <span style="color:#ec4899; font-weight:bold;">Classifier ({classifier_model})</span>
+    </p>
+""", unsafe_allow_html=True)
 
 
 # --- 3. Fungsi Logika (Deteksi dan Gambar Bounding Box) ---
