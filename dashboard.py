@@ -129,14 +129,14 @@ html_content = """
         let resultsArea;
         let uploadedFile;
 
-        // Data simulasi (Mock Data) dengan warna yang lebih cerah
+        // Data simulasi (Mock Data) yang disesuaikan untuk Cheetah atau Singa
         const mockResults = {
-            classification: "Pemandangan Luar Ruangan (Probabilitas: 98.2%)",
+            classification: "Kucing Besar Afrika (Probabilitas: 99.5%)",
             detections: [
-                // Warna baru untuk kontras: Gold, Dodger Blue, Hot Pink
-                { class: 'Orang', color: '#FFD700', box: [100, 150, 200, 400], confidence: 0.95 },
-                { class: 'Mobil', color: '#1E90FF', box: [500, 300, 750, 450], confidence: 0.88 },
-                { class: 'Pohon', color: '#FF69B4', box: [0, 50, 150, 500], confidence: 0.79 },
+                // Warna dan Bounding Box untuk Cheetah/Singa
+                { class: 'Cheetah/Singa', color: '#FFA500', box: [250, 200, 650, 550], confidence: 0.97 }, // Oranye untuk hewan utama
+                { class: 'Savana', color: '#32CD32', box: [0, 500, 1000, 1000], confidence: 0.92 }, // Hijau Limau untuk latar belakang
+                { class: 'Pohon Akasia', color: '#8A2BE2', box: [700, 100, 950, 450], confidence: 0.85 }, // Biru Ungu untuk pohon
             ]
         };
 
