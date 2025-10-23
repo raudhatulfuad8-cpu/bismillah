@@ -19,6 +19,24 @@ st.markdown("""
         .classification-card { background: linear-gradient(135deg, #7c3aed, #ec4899); color: white; padding: 1.5rem; border-radius: 15px; font-size: 1.6rem; font-weight: 700; text-align: center; box-shadow: 0 10px 20px rgba(124, 58, 237, 0.4); animation: fadeIn 1s; }
         .detection-item { background-color: #1f2937; padding: 10px; border-radius: 8px; margin-bottom: 5px; border-left: 5px solid; display: flex; justify-content: space-between; align-items: center; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* Gaya untuk tampilan awal */
+        .welcome-box {
+            background-color: #1a1e26; 
+            padding: 30px;
+            border-radius: 12px;
+            border: 2px solid #818cf8;
+            text-align: center;
+            margin-top: 40px;
+        }
+        .welcome-title {
+            color: #38f9d7;
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+        .welcome-text {
+            color: #c9d1d9;
+            font-size: 1.1rem;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -86,7 +104,7 @@ def process_image_with_models(uploaded_file, classifier, detector):
         sim_class = 'Cheetah'
         color = '#38f9d7' # Warna untuk Cheetah
     else:
-        # Jika nama file tidak jelas, tetapkan ke Singa sebagai default, atau acak jika diinginkan
+        # Jika nama file tidak jelas, tetapkan ke Singa sebagai default
         sim_class = 'Singa' 
         color = '#ec4899'
         
@@ -109,12 +127,35 @@ def process_image_with_models(uploaded_file, classifier, detector):
 
 
 # --- 4. TAMPILAN STREAMLIT (ANTARMUKA PENGGUNA) ---
+
+# Inisialisasi state jika belum ada
+if 'processed_image' not in st.session_state:
+    st.session_state.processed_image = None
+    
+# Area untuk unggah file
 uploaded_file = st.file_uploader(
     "Unggah Gambar Singa atau Cheetah Anda", 
     type=['jpg', 'jpeg', 'png'],
     accept_multiple_files=False,
     help="Hanya jenis file gambar yang didukung."
 )
+
+# Tampilan Konten Utama
+if uploaded_file is None and st.session_state.processed_image is None:
+    # --- TAMPILAN AWAL (WELCOME STATE) ---
+    st.markdown("""
+        <div class="welcome-box">
+            <p class="welcome-title">Selamat Datang di Demo Model AI Hewan Buas!</p>
+            <p class="welcome-text">
+                Unggah gambar di atas untuk melihat bagaimana model Klasifikasi (H5) dan Deteksi Objek (YOLOv8) bekerja. 
+                Kami akan menganalisis gambar dan memvisualisasikan hasilnya dengan <i>bounding box</i>.
+            </p>
+            <p class="welcome-text" style="margin-top: 15px; font-weight: bold; color: #818cf8;">
+                Petunjuk: Coba unggah gambar dengan nama file mengandung kata 'singa' atau 'cheetah' untuk hasil yang konsisten.
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
+
 
 if uploaded_file:
     col_img, col_info = st.columns([2, 1])
@@ -144,7 +185,9 @@ if uploaded_file:
 
 
 # --- 5. TAMPILKAN HASIL AKHIR ---
-if 'processed_image' in st.session_state and st.session_state.processed_image:
+if 'processed_image' in st.session_state and st.session_state.processed_image and uploaded_file is None:
+    # Menampilkan hasil setelah pemrosesan pertama (jika user tidak langsung mengupload gambar baru)
+    
     col_img, col_info = st.columns([2, 1])
     class_name = st.session_state.classification.split('(')[0].strip()
     emoji = "🦁" if "Singa" in class_name else "🐆" 
@@ -178,8 +221,3 @@ if 'processed_image' in st.session_state and st.session_state.processed_image:
                 </div>
             """
         placeholder_detections.markdown(f'<div style="animation: fadeIn 1.5s;">{detection_list}</div>', unsafe_allow_html=True)
-
-else:
-    # Inisialisasi state jika belum ada
-    if 'processed_image' not in st.session_state:
-        st.session_state.processed_image = None
