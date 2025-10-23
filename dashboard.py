@@ -130,13 +130,14 @@ html_content = """
         let uploadedFile;
 
         // Data simulasi (Mock Data) yang disesuaikan untuk Cheetah atau Singa
+        // HANYA OBJEK HEWAN YANG DITAMPILKAN
         const mockResults = {
             classification: "Kucing Besar Afrika (Probabilitas: 99.5%)",
             detections: [
-                // Warna dan Bounding Box untuk Cheetah/Singa
-                { class: 'Cheetah/Singa', color: '#FFA500', box: [250, 200, 650, 550], confidence: 0.97 }, // Oranye untuk hewan utama
-                { class: 'Savana', color: '#32CD32', box: [0, 500, 1000, 1000], confidence: 0.92 }, // Hijau Limau untuk latar belakang
-                { class: 'Pohon Akasia', color: '#8A2BE2', box: [700, 100, 950, 450], confidence: 0.85 }, // Biru Ungu untuk pohon
+                // Deteksi Singa (Warna Merah/Oranye Cerah)
+                { class: 'Singa', color: '#FF4500', box: [200, 300, 600, 650], confidence: 0.98 }, 
+                // Deteksi Cheetah (Warna Emas/Kuning Cerah)
+                { class: 'Cheetah', color: '#FFD700', box: [650, 400, 850, 600], confidence: 0.95 },
             ]
         };
 
@@ -338,6 +339,6 @@ components.html(html_content, height=1000, scrolling=True)
 st.markdown("""
     ---
     <p class="text-sm text-gray-500 text-center">
-        *Visualisasi ini disematkan ke dalam Streamlit menggunakan `st.components.v1.html`. Semua fungsionalitas (unggah gambar, simulasi pemrosesan) dijalankan oleh JavaScript di sisi klien (browser).
+        *Visualisasi ini disematkan ke dalam Streamlit menggunakan `st.components.v1.html`. Semua fungsionalitas (unggah gambar, simulasi pemrosesan) dijalankan oleh JavaScript di sisi klien (browser). Data deteksi telah disimulasikan **hanya untuk Singa dan Cheetah**.
     </p>
 """, unsafe_allow_html=True)
