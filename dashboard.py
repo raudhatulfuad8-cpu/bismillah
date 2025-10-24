@@ -19,11 +19,11 @@ st.markdown("Upload gambar untuk mendeteksi objek dengan YOLOv8 dan klasifikasi 
 # ==========================
 @st.cache_resource
 def load_models():
-    yolo_model = YOLO("model/best.pt")  # model deteksi objek YOLOv8
+    yolo_model = YOLO("best.pt")  # model deteksi objek YOLOv8
     
     # 🔧 trik kompatibilitas: disable compile dan safe_mode
     classifier_model = tf.keras.models.load_model(
-        "model/classifier_model.h5",
+        "classifier_model.h5",
         compile=False
     )
     return yolo_model, classifier_model
