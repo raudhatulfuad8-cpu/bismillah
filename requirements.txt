@@ -1,6 +1,6 @@
 streamlit
 ultralytics
-tensorflow
+tensorflow==2.12.0
 opencv-python
 pillow
 numpy
