@@ -10,8 +10,9 @@ H5_FILE_PATH = "classifier_model.h5"
 PT_FILE_PATH = "best.pt"
 H5_CLASSES = ['Cheetah', 'Singa'] # Asumsi urutan kelas dalam model H5 Anda
 
-# Cek apakah pustaka ML dapat dimuat (mode simulasi akan aktif jika gagal)
+# Cek apakah pustaka ML dapat dimuat. Jika gagal, inferensi nyata tidak akan berjalan.
 try:
+    # Mengimpor pustaka yang diperlukan untuk model nyata
     import tensorflow as tf
     from ultralytics import YOLO
     CAN_RUN_INFERENCE = True
@@ -31,7 +32,7 @@ st.markdown("""
         .classification-card { background: linear-gradient(135deg, #7c3aed, #ec4899); color: white; padding: 1.5rem; border-radius: 15px; font-size: 1.6rem; font-weight: 700; text-align: center; box-shadow: 0 10px 20px rgba(124, 58, 237, 0.4); animation: fadeIn 1s; }
         .detection-item { background-color: #1f2937; padding: 10px; border-radius: 8px; margin-bottom: 5px; border-left: 5px solid; display: flex; justify-content: space-between; align-items: center; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        /* Gaya untuk tampilan awal */
+        /* Gaya untuk tampilan awal yang sudah dihapus, menyisakan style dasar */
         .welcome-box {
             background-color: #1a1e26; 
             padding: 30px;
@@ -56,7 +57,7 @@ st.markdown("""
 # --- 2. PEMUATAN MODEL DENGAN CACHING ---
 @st.cache_resource
 def load_models(h5_path, pt_path):
-    """Memuat model nyata jika pustaka tersedia, jika tidak mengembalikan string nama file."""
+    """Memuat model nyata. Jika gagal, akan mengembalikan None."""
     if CAN_RUN_INFERENCE:
         try:
             # Pemuatan Model Klasifikasi (TensorFlow/Keras)
@@ -66,19 +67,21 @@ def load_models(h5_path, pt_path):
             st.toast("Model ML nyata dimuat!", icon="✅")
             return classifier, detector
         except Exception as e:
-            st.warning(f"Gagal memuat model nyata. Error: {e}. Menggunakan simulasi.")
+            st.error(f"FATAL: Gagal memuat model nyata. Pastikan file model dan pustaka ML sudah tersedia. Error: {e}")
             return None, None
     else:
-        # Mode Simulasi
+        st.error("FATAL: Pustaka TensorFlow atau Ultralytics tidak ditemukan. Inferensi model tidak dapat dijalankan.")
         return None, None
 
-CLASSIFIER, DETECTOR = load_models(H5_FILE_PATH, PT_FILE_PATH)
+# Hanya muat model jika inferensi nyata dimungkinkan (jika tidak, ini hanya mengembalikan None)
+CLASSIFIER, DETECTOR = load_models(H5_FILE_PATH, PT_FILE_PATH) 
 
 # --- TAMPILAN JUDUL UTAMA ---
 st.title("Aplikasi Klasifikasi & Deteksi Objek")
 
-model_status_h5 = "Siap (Loaded)" if CLASSIFIER else f"Simulasi ({H5_FILE_PATH})"
-model_status_pt = "Siap (Loaded)" if DETECTOR else f"Simulasi ({PT_FILE_PATH})"
+# Status Model sekarang menunjukkan apakah inferensi akan berjalan atau gagal (tidak ada lagi simulasi)
+model_status_h5 = "Siap (Loaded)" if CLASSIFIER else f"Gagal ({H5_FILE_PATH})"
+model_status_pt = "Siap (Loaded)" if DETECTOR else f"Gagal ({PT_FILE_PATH})"
 
 st.markdown(f"""
     <p class="subheader">
@@ -118,13 +121,14 @@ def draw_bounding_boxes(image: Image.Image, detections: list) -> Image.Image:
 
 
 def process_image_with_models(uploaded_file, classifier, detector):
-    """Fungsi untuk menjalankan inferensi nyata atau simulasi."""
+    """Fungsi untuk menjalankan inferensi nyata."""
     image = Image.open(uploaded_file).convert("RGB")
     width, height = image.size
     
+    # KARENA LOGIKA SIMULASI DIHAPUS, KITA HANYA MENGANDALKAN CAN_RUN_INFERENCE
     if classifier and detector and CAN_RUN_INFERENCE:
         # =========================================================
-        # --- MODE INFERENSI NYATA (Memerlukan Pustaka ML terinstal) ---
+        # --- MODE INFERENSI NYATA ---
         # =========================================================
         
         # 1. Klasifikasi (TensorFlow/Keras)
@@ -160,44 +164,26 @@ def process_image_with_models(uploaded_file, classifier, detector):
                     "confidence": conf
                 })
         
-        # Jika YOLO tidak mendeteksi apa-apa, gunakan kotak simulasi
+        # Jika YOLO tidak mendeteksi apa-apa, gunakan kotak sederhana sebagai fallback visual
         if not detections:
             detections = [{
                 "class": sim_class, # Gunakan hasil klasifikasi sebagai fallback
-                "color": color, 
+                "color": '#818cf8', 
                 "box": [int(width * 0.25), int(height * 0.25), int(width * 0.75), int(height * 0.75)], 
                 "confidence": sim_confidence
             }]
+    
+        # Hasil Klasifikasi
+        classification_result = f"{sim_class} (Probabilitas: {sim_confidence:.2%})"
+            
+        processed_image = draw_bounding_boxes(image.copy(), detections)
+        
+        return classification_result, detections, processed_image
 
     else:
-        # ===============================================
-        # --- MODE SIMULASI (Digunakan karena pustaka ML tidak ada) ---
-        # ===============================================
-        
-        file_name = uploaded_file.name.lower()
-        
-        if "singa" in file_name:
-            sim_class, color = 'Singa', '#ec4899'
-        elif "cheetah" in file_name:
-            sim_class, color = 'Cheetah', '#38f9d7'
-        else:
-            sim_class, color = 'Singa', '#ec4899'
-            
-        sim_confidence = random.uniform(0.95, 0.99)
-        
-        detections = [{
-            "class": sim_class, 
-            "color": color, 
-            "box": [int(width * 0.20), int(height * 0.30), int(width * 0.75), int(height * 0.70)], 
-            "confidence": sim_confidence
-        }]
-    
-    # Hasil Klasifikasi
-    classification_result = f"{sim_class} (Probabilitas: {sim_confidence:.2%})"
-        
-    processed_image = draw_bounding_boxes(image.copy(), detections)
-    
-    return classification_result, detections, processed_image
+        # PENTING: Jika inferensi NYATA gagal, kita mengembalikan None.
+        # Ini akan memicu pesan peringatan di UI.
+        return None, None, None
 
 
 # --- 4. TAMPILAN STREAMLIT (ANTARMUKA PENGGUNA) ---
@@ -215,21 +201,7 @@ uploaded_file = st.file_uploader(
 )
 
 # Tampilan Konten Utama
-if uploaded_file is None and st.session_state.processed_image is None:
-    # --- TAMPILAN AWAL (WELCOME STATE) ---
-    st.markdown("""
-        <div class="welcome-box">
-            <p class="welcome-title">Selamat Datang di Demo Model AI Hewan Buas!</p>
-            <p class="welcome-text">
-                Unggah gambar di atas untuk melihat bagaimana model Klasifikasi (H5) dan Deteksi Objek (YOLOv8) bekerja. 
-                Kami akan menganalisis gambar dan memvisualisasikan hasilnya dengan <i>bounding box</i>.
-            </p>
-            <p class="welcome-text" style="margin-top: 15px; font-weight: bold; color: #818cf8;">
-                Petunjuk: Coba unggah gambar dengan nama file mengandung kata 'singa' atau 'cheetah' untuk hasil yang konsisten.
-            </p>
-        </div>
-    """, unsafe_allow_html=True)
-
+# Tampilan awal (Welcome State) telah dihapus
 
 if uploaded_file:
     col_img, col_info = st.columns([2, 1])
@@ -252,14 +224,15 @@ if uploaded_file:
     
     col_btn, _ = st.columns([1, 2])
     with col_btn:
-        button_text = "▶️ Luncurkan Pemrosesan Model (NYATA)" if CLASSIFIER and DETECTOR else "▶️ Luncurkan Pemrosesan Model (SIMULASI)"
+        button_text = "▶️ Luncurkan Pemrosesan Model (NYATA)"
         
         if st.button(button_text, use_container_width=True):
-            status_message = "Memproses dengan model nyata..." if CLASSIFIER and DETECTOR else "Memproses dengan model Anda (Inferensi disimulasikan karena keterbatasan lingkungan)..."
-            
-            with st.spinner(status_message):
-                st.session_state.classification, st.session_state.detections, st.session_state.processed_image = process_image_with_models(uploaded_file, CLASSIFIER, DETECTOR)
-            st.toast("🎉 Pemrosesan Selesai! Visualisasi hasil model telah ditampilkan.")
+            if CLASSIFIER and DETECTOR:
+                with st.spinner("Memproses dengan model nyata..."):
+                    st.session_state.classification, st.session_state.detections, st.session_state.processed_image = process_image_with_models(uploaded_file, CLASSIFIER, DETECTOR)
+                st.toast("🎉 Pemrosesan Selesai! Visualisasi hasil model telah ditampilkan.")
+            else:
+                st.warning("Gagal memproses. Model tidak dimuat karena pustaka ML yang diperlukan tidak ditemukan. Anda harus menjalankan kode ini di lingkungan dengan TensorFlow dan Ultralytics.")
 
 
 # --- 5. TAMPILKAN HASIL AKHIR ---
@@ -288,7 +261,7 @@ if 'processed_image' in st.session_state and st.session_state.processed_image:
         
         detection_list = ""
         for det in st.session_state.detections:
-            color_code = '#38f9d7' if "Cheetah" in det['class'] else '#ec4899'
+            color_code = det.get('color', '#818cf8') # Ambil warna dari deteksi, default jika tidak ada
             detection_list += f"""
                 <div class="detection-item" style="border-left-color: {color_code};">
                     <span style="font-weight: bold; color: white;">{det['class']}</span>
