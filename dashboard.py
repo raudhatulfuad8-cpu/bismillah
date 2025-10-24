@@ -1,10 +1,22 @@
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 import random
+import io
+import numpy as np
 
 # --- KONSTANTA & SETUP AWAL ---
-# Kelas untuk simulasi (H5_CLASSES)
-H5_CLASSES = ['Singa', 'Cheetah']
+# File model yang diunggah
+H5_FILE_PATH = "classifier_model.h5"
+PT_FILE_PATH = "best.pt"
+H5_CLASSES = ['Cheetah', 'Singa'] # Asumsi urutan kelas dalam model H5 Anda
+
+# Cek apakah pustaka ML dapat dimuat (mode simulasi akan aktif jika gagal)
+try:
+    import tensorflow as tf
+    from ultralytics import YOLO
+    CAN_RUN_INFERENCE = True
+except (ImportError, ModuleNotFoundError):
+    CAN_RUN_INFERENCE = False
 
 st.set_page_config(page_title="Visualisasi Model AI (Python Native)", page_icon="🦁", layout="wide")
 
@@ -37,38 +49,43 @@ st.markdown("""
             color: #c9d1d9;
             font-size: 1.1rem;
         }
-        /* Gaya untuk Peringatan Simulasi */
-        .simulation-warning {
-            background-color: #4a191f; /* Dark red/maroon background */
-            color: #ff9999; /* Light red text */
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border-left: 5px solid #ec4899;
-            font-weight: bold;
-        }
     </style>
 """, unsafe_allow_html=True)
 
 
 # --- 2. PEMUATAN MODEL DENGAN CACHING ---
 @st.cache_resource
-def load_models():
-    """Memuat nama file model placeholder."""
-    return "classifier_model.h5", "best.pt"
+def load_models(h5_path, pt_path):
+    """Memuat model nyata jika pustaka tersedia, jika tidak mengembalikan string nama file."""
+    if CAN_RUN_INFERENCE:
+        try:
+            # Pemuatan Model Klasifikasi (TensorFlow/Keras)
+            classifier = tf.keras.models.load_model(h5_path)
+            # Pemuatan Model Deteksi (Ultralytics YOLO)
+            detector = YOLO(pt_path)
+            st.toast("Model ML nyata dimuat!", icon="✅")
+            return classifier, detector
+        except Exception as e:
+            st.warning(f"Gagal memuat model nyata. Error: {e}. Menggunakan simulasi.")
+            return None, None
+    else:
+        # Mode Simulasi
+        return None, None
 
-classifier_model, detector_model = load_models()
+CLASSIFIER, DETECTOR = load_models(H5_FILE_PATH, PT_FILE_PATH)
 
 # --- TAMPILAN JUDUL UTAMA ---
 st.title("Aplikasi Klasifikasi & Deteksi Objek")
 
-# KOTAK PERINGATAN SIMULASI (Telah Dihapus)
+model_status_h5 = "Siap (Loaded)" if CLASSIFIER else f"Simulasi ({H5_FILE_PATH})"
+model_status_pt = "Siap (Loaded)" if DETECTOR else f"Simulasi ({PT_FILE_PATH})"
 
 st.markdown(f"""
     <p class="subheader">
-        Penganalisis Hewan Buas Canggih: Memuat Model 
-        <span style="color:#38f9d7; font-weight:bold;">YOLOv8 ({detector_model})</span> & 
-        <span style="color:#ec4899; font-weight:bold;">Classifier ({classifier_model})</span>
+        Penganalisis Hewan Buas Canggih: Model Deteksi 
+        <span style="color:#38f9d7; font-weight:bold;">YOLOv8 ({model_status_pt})</span> & 
+        Model Klasifikasi 
+        <span style="color:#ec4899; font-weight:bold;">({model_status_h5})</span>
     </p>
 """, unsafe_allow_html=True)
 
@@ -101,38 +118,82 @@ def draw_bounding_boxes(image: Image.Image, detections: list) -> Image.Image:
 
 
 def process_image_with_models(uploaded_file, classifier, detector):
-    """Fungsi untuk mensimulasikan inferensi model."""
+    """Fungsi untuk menjalankan inferensi nyata atau simulasi."""
     image = Image.open(uploaded_file).convert("RGB")
     width, height = image.size
     
-    # --- LOGIKA SIMULASI HASIL YANG KONSISTEN (Menggunakan nama file) ---
-    
-    # Mencoba menebak kelas dari nama file
-    file_name = uploaded_file.name.lower()
-    
-    if "singa" in file_name:
-        sim_class = 'Singa'
-        color = '#ec4899' # Warna untuk Singa
-    elif "cheetah" in file_name:
-        sim_class = 'Cheetah'
-        color = '#38f9d7' # Warna untuk Cheetah
-    else:
-        # Jika nama file tidak jelas, tetapkan ke Singa sebagai default
-        sim_class = 'Singa' 
-        color = '#ec4899'
+    if classifier and detector and CAN_RUN_INFERENCE:
+        # =========================================================
+        # --- MODE INFERENSI NYATA (Memerlukan Pustaka ML terinstal) ---
+        # =========================================================
         
-    sim_confidence = random.uniform(0.95, 0.99)
+        # 1. Klasifikasi (TensorFlow/Keras)
+        target_size = (224, 224) # Sesuaikan dengan ukuran input model H5 Anda
+        img_resized = image.resize(target_size)
+        img_array = np.array(img_resized) / 255.0  # Normalisasi
+        img_array = np.expand_dims(img_array, axis=0) # Tambah dimensi batch
+
+        predictions = classifier.predict(img_array)
+        class_index = np.argmax(predictions[0])
+        sim_class = H5_CLASSES[class_index]
+        sim_confidence = predictions[0][class_index]
+        
+        # 2. Deteksi Objek (YOLOv8)
+        results = detector(image, verbose=False) 
+        
+        detections = []
+        for r in results:
+            if r.boxes.xyxy.numel() > 0:
+                # Ambil hasil deteksi pertama saja
+                box = r.boxes.xyxy[0].tolist()
+                conf = r.boxes.conf[0].item()
+                cls_idx = int(r.boxes.cls[0].item())
+                
+                det_class = r.names[cls_idx]
+                
+                color = '#38f9d7' if 'Cheetah' in det_class else '#ec4899'
+                
+                detections.append({
+                    "class": det_class, 
+                    "color": color, 
+                    "box": [int(b) for b in box], 
+                    "confidence": conf
+                })
+        
+        # Jika YOLO tidak mendeteksi apa-apa, gunakan kotak simulasi
+        if not detections:
+            detections = [{
+                "class": sim_class, # Gunakan hasil klasifikasi sebagai fallback
+                "color": color, 
+                "box": [int(width * 0.25), int(height * 0.25), int(width * 0.75), int(height * 0.75)], 
+                "confidence": sim_confidence
+            }]
+
+    else:
+        # ===============================================
+        # --- MODE SIMULASI (Digunakan karena pustaka ML tidak ada) ---
+        # ===============================================
+        
+        file_name = uploaded_file.name.lower()
+        
+        if "singa" in file_name:
+            sim_class, color = 'Singa', '#ec4899'
+        elif "cheetah" in file_name:
+            sim_class, color = 'Cheetah', '#38f9d7'
+        else:
+            sim_class, color = 'Singa', '#ec4899'
+            
+        sim_confidence = random.uniform(0.95, 0.99)
+        
+        detections = [{
+            "class": sim_class, 
+            "color": color, 
+            "box": [int(width * 0.20), int(height * 0.30), int(width * 0.75), int(height * 0.70)], 
+            "confidence": sim_confidence
+        }]
     
     # Hasil Klasifikasi
     classification_result = f"{sim_class} (Probabilitas: {sim_confidence:.2%})"
-
-    # Hasil Deteksi
-    detections = [{
-        "class": sim_class, 
-        "color": color, 
-        "box": [int(width * 0.20), int(height * 0.30), int(width * 0.75), int(height * 0.70)], 
-        "confidence": sim_confidence
-    }]
         
     processed_image = draw_bounding_boxes(image.copy(), detections)
     
@@ -191,9 +252,13 @@ if uploaded_file:
     
     col_btn, _ = st.columns([1, 2])
     with col_btn:
-        if st.button("▶️ Luncurkan Pemrosesan Model", use_container_width=True):
-            with st.spinner("Memproses dengan model Anda (Inferensi disimulasikan karena keterbatasan lingkungan)..."):
-                st.session_state.classification, st.session_state.detections, st.session_state.processed_image = process_image_with_models(uploaded_file, classifier_model, detector_model)
+        button_text = "▶️ Luncurkan Pemrosesan Model (NYATA)" if CLASSIFIER and DETECTOR else "▶️ Luncurkan Pemrosesan Model (SIMULASI)"
+        
+        if st.button(button_text, use_container_width=True):
+            status_message = "Memproses dengan model nyata..." if CLASSIFIER and DETECTOR else "Memproses dengan model Anda (Inferensi disimulasikan karena keterbatasan lingkungan)..."
+            
+            with st.spinner(status_message):
+                st.session_state.classification, st.session_state.detections, st.session_state.processed_image = process_image_with_models(uploaded_file, CLASSIFIER, DETECTOR)
             st.toast("🎉 Pemrosesan Selesai! Visualisasi hasil model telah ditampilkan.")
 
 
@@ -206,7 +271,6 @@ if 'processed_image' in st.session_state and st.session_state.processed_image:
 
     with col_img:
         st.subheader("👁️ Visualisasi Deteksi")
-        # Pastikan gambar yang ditampilkan adalah hasil yang diproses (st.session_state.processed_image)
         st.image(st.session_state.processed_image, caption=f"Hasil Deteksi: {class_name}", use_column_width=True)
 
     with col_info:
@@ -214,7 +278,6 @@ if 'processed_image' in st.session_state and st.session_state.processed_image:
         
         # 1. Update Hasil Klasifikasi
         st.markdown('<p style="color:#ec4899; font-weight:600; font-size: 1.1rem;">[H5] Klasifikasi Utama</p>', unsafe_allow_html=True)
-        # Gunakan placeholder yang tepat jika diperlukan, atau tampilkan langsung
         st.markdown(
             f'<div class="classification-card">{emoji} {st.session_state.classification}</div>', 
             unsafe_allow_html=True
