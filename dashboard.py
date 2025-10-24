@@ -32,8 +32,8 @@ st.write("Aplikasi ini mendeteksi objek dengan **YOLOv8** dan mengklasifikasikan
 # ==========================
 @st.cache_resource
 def load_models():
-    yolo = YOLO("model/best.pt")  # model YOLOv8 deteksi objek
-    classifier = tf.keras.models.load_model("model/classifier_model.h5")  # model klasifikasi (Lion vs Cheetah)
+    yolo = YOLO("best.pt")  # model YOLOv8 deteksi objek
+    classifier = tf.keras.models.load_model("classifier_model.h5")  # model klasifikasi (Lion vs Cheetah)
     return yolo, classifier
 
 yolo_model, classifier_model = load_models()
