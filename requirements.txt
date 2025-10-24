@@ -1,6 +1,6 @@
 streamlit
 ultralytics
 opencv-python-headless
-tensorflow
+tensorflow==2.13.0
 numpy
 Pillow
