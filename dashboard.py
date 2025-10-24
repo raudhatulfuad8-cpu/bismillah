@@ -1,118 +1,343 @@
 import streamlit as st
-from PIL import Image
-import numpy as np
-import cv2
-import torch
-from tensorflow.keras.models import load_model
+import streamlit.components.v1 as components
 
-# Styling CSS untuk tema warna dan font
-st.markdown(
-    """
-    <style>
-    body {
-        background-color: #f0f8ff;
-        color: #333333;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    .stButton>button {
-        background-color: #4caf50;
-        color: white;
-        font-weight: bold;
-    }
-    .stButton>button:hover {
-        background-color: #45a049;
-        color: white;
-    }
-    .sidebar .sidebar-content {
-        background-color: #e0f2f1;
-        color: #00796b;
-        font-weight: bold;
-    }
-    .stFileUploader>div>div {
-        border: 2px dashed #4caf50;
-        padding: 15px;
-        border-radius: 10px;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
+# Konfigurasi halaman Streamlit
+st.set_page_config(
+    page_title="Visualisasi Model AI",
+    page_icon="✨",
+    layout="wide"
 )
 
-@st.cache(allow_output_mutation=True)
-def load_yolo_model(path):
-    model = torch.hub.load('ultralytics/yolov8', 'custom', path=path, force_reload=True)
-    return model
+# Menghilangkan padding atas dan samping default untuk tampilan penuh
+st.markdown("""
+    <style>
+        .reportview-container .main .block-container {
+            padding-top: 1rem;
+            padding-right: 1rem;
+            padding-left: 1rem;
+            padding-bottom: 1rem;
+        }
+    </style>
+    """, unsafe_allow_html=True)
 
-@st.cache(allow_output_mutation=True)
-def load_classifier_model(path):
-    model = load_model(path)
-    return model
 
-def preprocess_classifier_img(image, target_size=(224, 224)):
-    image = image.resize(target_size)
-    image_array = np.array(image) / 255.0
-    image_array = np.expand_dims(image_array, axis=0)
-    return image_array
+# --- KODE HTML/JS LENGKAP DARI VISUALISASI DI BAWAH INI ---
+# HTML ini ditanamkan menggunakan st.components.v1.html
+html_content = """
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualisasi Deteksi Objek & Klasifikasi Gambar</title>
+    <!-- Muat Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Konfigurasi Font Inter -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1117; /* Latar belakang gelap */
+            color: #c9d1d9;
+        }
+        /* Efek glow pada batas card utama */
+        #app {
+            box-shadow: 0 0 25px rgba(255, 105, 180, 0.2); /* Bayangan pink/fuchsia lembut */
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
 
-def draw_boxes(img, results):
-    for *box, conf, cls in results.xyxy[0]:
-        x1, y1, x2, y2 = map(int, box)
-        label = results.names[int(cls)]
-        cv2.rectangle(img, (x1, y1), (x2, y2), (0, 128, 0), 3)
-        cv2.putText(img, f'{label} {conf:.2f}', (x1, y1 - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,128,0), 2)
-    return img
+    <div id="app" class="w-full max-w-4xl bg-gray-900/90 p-6 md:p-10 rounded-xl border border-fuchsia-800/50 transition-all duration-500 hover:shadow-fuchsia-500/30">
+        <h1 class="text-4xl font-extrabold mb-4 text-white text-center tracking-tight">
+            Aplikasi Klasifikasi & Deteksi Objek
+        </h1>
+        <p class="text-center mb-8 text-gray-400">
+            Simulasi visualisasi hasil dari model <span class="text-lime-400 font-semibold">YOLOv8 (.pt)</span> dan <span class="text-fuchsia-400 font-semibold">Classifier (.h5)</span>.
+        </p>
 
-def main():
-    st.set_page_config(page_title="Deteksi dan Klasifikasi Hewan", layout="wide")
+        <!-- Area Unggah File -->
+        <div class="mb-8 p-6 border-2 border-dashed border-pink-500/50 bg-gray-800 rounded-xl hover:border-pink-400 hover:shadow-md hover:shadow-pink-500/20 transition duration-300">
+            <input type="file" id="imageUpload" accept="image/*" class="hidden" onchange="previewImage(event)">
+            <label for="imageUpload" class="cursor-pointer flex flex-col items-center justify-center py-6 text-gray-400">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10 mb-2 text-pink-400 animate-pulse">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+                </svg>
+                <span class="text-white font-bold text-lg">Klik untuk Unggah Gambar</span>
+                <span class="text-sm">atau seret dan lepas gambar (JPG, PNG)</span>
+            </label>
+        </div>
 
-    st.title("🦁 Deteksi dan Klasifikasi Hewan: Cheetah & Lion")
-    st.write("Upload gambar hewan dan aplikasinya akan mendeteksi objek dengan YOLOv8 dan mengklasifikasikan gambar menggunakan model Keras.")
+        <!-- Area Tampilan Gambar dan Hasil -->
+        <div id="resultsArea" class="hidden">
+            <div class="relative mb-8 rounded-xl overflow-hidden border border-gray-700 shadow-xl shadow-gray-700/20">
+                <img id="uploadedImage" src="#" alt="Gambar Terunggah" class="w-full h-auto object-contain max-h-[500px]">
+                <canvas id="detectionCanvas" class="absolute top-0 left-0 w-full h-full"></canvas>
+            </div>
 
-    with st.sidebar:
-        st.header("Pengaturan Model")
-        yolo_model_path = st.text_input("Path model YOLOv8 (.pt)", "best.pt")
-        classifier_model_path = st.text_input("Path model klasifikasi (.h5)", "classifier_model.h5")
-        confidence_threshold = st.slider("Confidence Threshold YOLOv8", 0.0, 1.0, 0.25, 0.05)
-        st.markdown("---")
-        st.markdown("**Catatan:** Pastikan model berada di lokasi yang benar dan kompatibel.")
+            <div class="flex flex-col md:flex-row gap-6">
+                <!-- Klasifikasi Gambar (H5 Model) -->
+                <div class="flex-1 p-5 bg-gray-800 rounded-xl border border-fuchsia-600/50 shadow-lg shadow-fuchsia-500/10">
+                    <h2 class="text-xl font-semibold mb-3 text-fuchsia-400">1. Hasil Klasifikasi Gambar (.h5)</h2>
+                    <p class="text-sm text-gray-500 mb-4">Klasifikasi Kategori Global (Classifier Model)</p>
+                    <div id="classificationResult" class="text-3xl font-extrabold text-white bg-fuchsia-800/50 p-4 rounded-xl text-center border-2 border-fuchsia-500/80">
+                        Memuat...
+                    </div>
+                </div>
 
-    try:
-        yolo_model = load_yolo_model(yolo_model_path)
-        classifier_model = load_classifier_model(classifier_model_path)
-    except Exception as e:
-        st.error(f"Error loading models: {e}")
-        return
+                <!-- Deteksi Objek (YOLOv8 Model) -->
+                <div class="flex-1 p-5 bg-gray-800 rounded-xl border border-lime-600/50 shadow-lg shadow-lime-500/10">
+                    <h2 class="text-xl font-semibold mb-3 text-lime-400">2. Hasil Deteksi Objek (YOLOv8)</h2>
+                    <p class="text-sm text-gray-500 mb-4">Objek yang Ditemukan dan Lokasinya (YOLOv8 Model)</p>
+                    <ul id="detectionList" class="space-y-3 max-h-40 overflow-y-auto">
+                        <!-- Hasil deteksi akan dimasukkan di sini -->
+                        <li class="text-white text-lg text-center py-4">Memuat...</li>
+                    </ul>
+                </div>
+            </div>
 
-    uploaded_file = st.file_uploader("Upload Gambar Hewan (.jpg, .jpeg, .png)", type=["jpg", "jpeg", "png"])
+            <!-- Tombol Proses dengan Gradien -->
+            <button id="processButton" onclick="processImage()" class="w-full mt-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-extrabold text-lg rounded-xl transition duration-300 shadow-xl shadow-pink-500/50 disabled:opacity-50 disabled:shadow-none" disabled>
+                <span id="buttonText">Luncurkan Pemrosesan Model</span>
+                <span id="loadingSpinner" class="hidden">
+                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Memproses (Simulasi Model)...
+                </span>
+            </button>
+        </div>
 
-    if uploaded_file is not None:
-        image = Image.open(uploaded_file).convert("RGB")
-        st.image(image, caption="Gambar asli", use_column_width=True)
+        <!-- Pesan Modal untuk Simulasi -->
+        <div id="messageBox" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center p-4 z-50">
+            <div class="bg-gray-800 p-8 rounded-xl border border-lime-500 shadow-2xl max-w-sm text-center">
+                <p id="messageContent" class="text-xl font-bold text-lime-400 mb-4"></p>
+                <button onclick="document.getElementById('messageBox').classList.add('hidden')" class="bg-lime-600 hover:bg-lime-700 text-black font-semibold py-2 px-6 rounded-lg transition duration-300">Oke, Mengerti</button>
+            </div>
+        </div>
 
-        img_cv = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-        results = yolo_model(img_cv, conf=confidence_threshold)
+    </div>
 
-        img_result = draw_boxes(img_cv.copy(), results)
-        img_result_rgb = cv2.cvtColor(img_result, cv2.COLOR_BGR2RGB)
+    <script>
+        // Variabel global
+        let uploadedImageElement;
+        let detectionCanvas;
+        let processButton;
+        let classificationResultElement;
+        let detectionListElement;
+        let resultsArea;
+        let uploadedFile;
 
-        st.subheader("Hasil Deteksi dengan YOLOv8")
-        st.image(img_result_rgb, use_column_width=True)
+        // Data simulasi (Mock Data) yang disesuaikan untuk Cheetah atau Singa
+        const mockResults = {
+            classification: "Kucing Besar Afrika (Probabilitas: 99.5%)",
+            detections: [
+                // Warna dan Bounding Box untuk Cheetah/Singa
+                { class: 'Cheetah/Singa', color: '#FFA500', box: [250, 200, 650, 550], confidence: 0.97 }, // Oranye untuk hewan utama
+                { class: 'Savana', color: '#32CD32', box: [0, 500, 1000, 1000], confidence: 0.92 }, // Hijau Limau untuk latar belakang
+                { class: 'Pohon Akasia', color: '#8A2BE2', box: [700, 100, 950, 450], confidence: 0.85 }, // Biru Ungu untuk pohon
+            ]
+        };
 
-        preprocessed = preprocess_classifier_img(image)
-        preds = classifier_model.predict(preprocessed)
-        class_idx = np.argmax(preds)
-        class_labels = ['Cheetah', 'Lion']  # Sesuaikan sesuai model klasifikasi Anda
-        conf_score = preds[0][class_idx]
-        predicted_class = class_labels[class_idx]
+        document.addEventListener('DOMContentLoaded', () => {
+            uploadedImageElement = document.getElementById('uploadedImage');
+            detectionCanvas = document.getElementById('detectionCanvas');
+            processButton = document.getElementById('processButton');
+            classificationResultElement = document.getElementById('classificationResult');
+            detectionListElement = document.getElementById('detectionList');
+            resultsArea = document.getElementById('resultsArea');
+        });
 
-        st.subheader("Hasil Klasifikasi Gambar")
-        st.markdown(f"""
-            <h3 style="color:#4caf50;">{predicted_class}</h3>
-            <p>Confidence: <strong>{conf_score:.2f}</strong></p>
-        """, unsafe_allow_html=True)
+        // Fungsi untuk menampilkan pesan modal (pengganti alert())
+        function showMessage(content) {
+            document.getElementById('messageContent').textContent = content;
+            document.getElementById('messageBox').classList.remove('hidden');
+            document.getElementById('messageBox').classList.add('flex');
+        }
 
-        st.success("Deteksi dan klasifikasi selesai!")
+        // 1. Pratinjau Gambar dan Set up UI
+        function previewImage(event) {
+            uploadedFile = event.target.files[0];
+            if (uploadedFile) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // Tampilkan area hasil
+                    resultsArea.classList.remove('hidden');
 
-if __name__ == "__main__":
-    main()
+                    // Set sumber gambar
+                    uploadedImageElement.src = e.target.result;
+
+                    // Bersihkan canvas
+                    const ctx = detectionCanvas.getContext('2d');
+                    ctx.clearRect(0, 0, detectionCanvas.width, detectionCanvas.height);
+
+                    // Bersihkan hasil sebelumnya
+                    classificationResultElement.textContent = 'Menunggu Pemrosesan...';
+                    classificationResultElement.classList.remove('bg-fuchsia-800/50', 'border-fuchsia-500/80');
+                    classificationResultElement.classList.add('bg-gray-700/30', 'border-gray-600');
+                    detectionListElement.innerHTML = '<li class="text-gray-400 text-md text-center py-4">Tekan tombol proses untuk menjalankan simulasi model.</li>';
+
+                    // Aktifkan tombol proses
+                    processButton.disabled = false;
+                    document.getElementById('buttonText').classList.remove('hidden');
+                    document.getElementById('loadingSpinner').classList.add('hidden');
+
+                    // Tunggu gambar dimuat untuk mendapatkan dimensi
+                    uploadedImageElement.onload = () => {
+                        // Pastikan canvas berukuran sama dengan gambar
+                        setCanvasSize();
+                    };
+                }
+                reader.readAsDataURL(uploadedFile);
+            }
+        }
+
+        function setCanvasSize() {
+            // Dapatkan dimensi gambar yang ditampilkan (penting untuk responsivitas)
+            const imgWidth = uploadedImageElement.offsetWidth;
+            const imgHeight = uploadedImageElement.offsetHeight;
+
+            // Set dimensi canvas
+            detectionCanvas.width = imgWidth;
+            detectionCanvas.height = imgHeight;
+            // Set posisi canvas agar menutupi gambar
+            // Posisi sudah diatur oleh CSS: absolute top-0 left-0
+        }
+
+        window.addEventListener('resize', () => {
+            if (uploadedFile) {
+                setCanvasSize();
+                // Jika sudah diproses, gambar ulang kotak deteksi
+                if (classificationResultElement.textContent !== 'Menunggu Pemrosesan...') {
+                    drawBoundingBoxes();
+                }
+            }
+        });
+
+        // 2. Simulasi Pemrosesan Gambar (Menggantikan Panggilan API Model Sebenarnya)
+        function processImage() {
+            if (!uploadedFile) {
+                showMessage("Silakan unggah gambar terlebih dahulu.");
+                return;
+            }
+
+            // Tampilkan loading state
+            processButton.disabled = true;
+            document.getElementById('buttonText').classList.add('hidden');
+            document.getElementById('loadingSpinner').classList.remove('hidden');
+            detectionListElement.innerHTML = '<li class="text-center text-sm text-pink-400 py-2">Model sedang menganalisis gambar dengan energi penuh...</li>';
+            classificationResultElement.textContent = 'Sedang Dihitung...';
+            classificationResultElement.classList.remove('bg-fuchsia-800/50', 'border-fuchsia-500/80');
+            classificationResultElement.classList.add('bg-gray-700/30', 'border-gray-600');
+            
+            // Simulasi waktu pemrosesan 3 detik
+            setTimeout(() => {
+                // Sembunyikan loading state
+                processButton.disabled = false;
+                document.getElementById('buttonText').classList.remove('hidden');
+                document.getElementById('loadingSpinner').classList.add('hidden');
+
+                // Tampilkan hasil Klasifikasi (Model H5)
+                classificationResultElement.textContent = mockResults.classification;
+                classificationResultElement.classList.remove('bg-gray-700/30', 'border-gray-600');
+                classificationResultElement.classList.add('bg-fuchsia-800/50', 'border-fuchsia-500/80');
+
+                // Tampilkan hasil Deteksi Objek (YOLOv8)
+                displayDetectionList(mockResults.detections);
+                
+                // Gambar bounding boxes di canvas
+                drawBoundingBoxes(mockResults.detections);
+
+                showMessage("🎉 Pemrosesan Selesai! Visualisasi hasil model telah ditampilkan.");
+
+            }, 3000); // Simulasi waktu proses
+        }
+
+        // 3. Tampilkan Daftar Deteksi (YOLOv8)
+        function displayDetectionList(detections) {
+            detectionListElement.innerHTML = '';
+            if (detections.length === 0) {
+                detectionListElement.innerHTML = '<li class="text-sm text-gray-500 py-2">Tidak ada objek yang terdeteksi dengan tingkat kepercayaan yang cukup.</li>';
+                return;
+            }
+
+            detections.forEach(detection => {
+                const li = document.createElement('li');
+                // Menggunakan warna latar belakang yang lebih gelap dan warna border yang sesuai dengan warna deteksi
+                li.className = 'flex justify-between items-center p-3 bg-gray-700/50 rounded-lg border-l-4';
+                li.style.borderColor = detection.color;
+
+                li.innerHTML = `
+                    <span class="font-bold text-white">${detection.class}</span>
+                    <span class="text-xs font-mono px-3 py-1 rounded-full text-black" style="background-color: ${detection.color};">
+                        ${(detection.confidence * 100).toFixed(1)}%
+                    </span>
+                `;
+                detectionListElement.appendChild(li);
+            });
+        }
+
+        // 4. Gambar Bounding Boxes di Canvas
+        function drawBoundingBoxes(detections = mockResults.detections) {
+            if (!uploadedImageElement.complete) {
+                // Pastikan gambar sudah dimuat sebelum menggambar
+                uploadedImageElement.onload = () => drawBoundingBoxes(detections);
+                return;
+            }
+            
+            setCanvasSize();
+            const ctx = detectionCanvas.getContext('2d');
+            const imgWidth = uploadedImageElement.naturalWidth; // Ukuran asli gambar
+            const imgHeight = uploadedImageElement.naturalHeight;
+            const canvasWidth = detectionCanvas.width; // Ukuran tampilan gambar
+            const canvasHeight = detectionCanvas.height;
+
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight); // Bersihkan canvas
+
+            detections.forEach(detection => {
+                // Koordinat kotak: [x_min, y_min, x_max, y_max] (dari 0 hingga 1000 dalam mock data)
+                // Ubah ke koordinat piksel tampilan
+                const x = detection.box[0] * (canvasWidth / 1000);
+                const y = detection.box[1] * (canvasHeight / 1000);
+                const w = (detection.box[2] - detection.box[0]) * (canvasWidth / 1000);
+                const h = (detection.box[3] - detection.box[1]) * (canvasHeight / 1000);
+
+                // Gambar Bounding Box
+                ctx.strokeStyle = detection.color;
+                ctx.lineWidth = 3;
+                ctx.strokeRect(x, y, w, h);
+
+                // Gambar Label
+                const label = `${detection.class} ${(detection.confidence * 100).toFixed(1)}%`;
+                ctx.font = '700 14px Inter'; // Font tebal
+                
+                // Ukur teks untuk kotak latar belakang
+                const textMetrics = ctx.measureText(label);
+                const textWidth = textMetrics.width;
+                const textHeight = 20;
+
+                // Kotak latar belakang label
+                ctx.fillStyle = detection.color;
+                ctx.fillRect(x - 1, y - textHeight, textWidth + 10, textHeight);
+
+                // Teks Label
+                ctx.fillStyle = '#0d1117'; // Teks hitam untuk kontras maksimum
+                ctx.fillText(label, x + 4, y - 5);
+            });
+        }
+    </script>
+</body>
+</html>
+"""
+
+# Tanamkan konten HTML ke Streamlit
+components.html(html_content, height=1000, scrolling=True)
+
+# Menambahkan Catatan Streamlit di bawah
+st.markdown("""
+    ---
+    <p class="text-sm text-gray-500 text-center">
+        *Visualisasi ini disematkan ke dalam Streamlit menggunakan `st.components.v1.html`. Semua fungsionalitas (unggah gambar, simulasi pemrosesan) dijalankan oleh JavaScript di sisi klien (browser).
+    </p>
+""", unsafe_allow_html=True)
