@@ -21,8 +21,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 
-# --- KODE HTML/JS LENGKAP DARI VISUALISASI DI BAWAH INI ---
-# HTML ini ditanamkan menggunakan st.components.v1.html
+# --- KODE HTML/JS LENGKAP DARI VISUALISASI DI BAWAH INI (Telah Dimodifikasi) ---
 html_content = """
 <!DOCTYPE html>
 <html lang="id">
@@ -30,9 +29,7 @@ html_content = """
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Visualisasi Deteksi Objek & Klasifikasi Gambar</title>
-    <!-- Muat Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Konfigurasi Font Inter -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
         body {
@@ -56,7 +53,6 @@ html_content = """
             Simulasi visualisasi hasil dari model <span class="text-lime-400 font-semibold">YOLOv8 (.pt)</span> dan <span class="text-fuchsia-400 font-semibold">Classifier (.h5)</span>.
         </p>
 
-        <!-- Area Unggah File -->
         <div class="mb-8 p-6 border-2 border-dashed border-pink-500/50 bg-gray-800 rounded-xl hover:border-pink-400 hover:shadow-md hover:shadow-pink-500/20 transition duration-300">
             <input type="file" id="imageUpload" accept="image/*" class="hidden" onchange="previewImage(event)">
             <label for="imageUpload" class="cursor-pointer flex flex-col items-center justify-center py-6 text-gray-400">
@@ -68,7 +64,6 @@ html_content = """
             </label>
         </div>
 
-        <!-- Area Tampilan Gambar dan Hasil -->
         <div id="resultsArea" class="hidden">
             <div class="relative mb-8 rounded-xl overflow-hidden border border-gray-700 shadow-xl shadow-gray-700/20">
                 <img id="uploadedImage" src="#" alt="Gambar Terunggah" class="w-full h-auto object-contain max-h-[500px]">
@@ -76,7 +71,6 @@ html_content = """
             </div>
 
             <div class="flex flex-col md:flex-row gap-6">
-                <!-- Klasifikasi Gambar (H5 Model) -->
                 <div class="flex-1 p-5 bg-gray-800 rounded-xl border border-fuchsia-600/50 shadow-lg shadow-fuchsia-500/10">
                     <h2 class="text-xl font-semibold mb-3 text-fuchsia-400">1. Hasil Klasifikasi Gambar (.h5)</h2>
                     <p class="text-sm text-gray-500 mb-4">Klasifikasi Kategori Global (Classifier Model)</p>
@@ -85,18 +79,15 @@ html_content = """
                     </div>
                 </div>
 
-                <!-- Deteksi Objek (YOLOv8 Model) -->
                 <div class="flex-1 p-5 bg-gray-800 rounded-xl border border-lime-600/50 shadow-lg shadow-lime-500/10">
                     <h2 class="text-xl font-semibold mb-3 text-lime-400">2. Hasil Deteksi Objek (YOLOv8)</h2>
                     <p class="text-sm text-gray-500 mb-4">Objek yang Ditemukan dan Lokasinya (YOLOv8 Model)</p>
                     <ul id="detectionList" class="space-y-3 max-h-40 overflow-y-auto">
-                        <!-- Hasil deteksi akan dimasukkan di sini -->
                         <li class="text-white text-lg text-center py-4">Memuat...</li>
                     </ul>
                 </div>
             </div>
 
-            <!-- Tombol Proses dengan Gradien -->
             <button id="processButton" onclick="processImage()" class="w-full mt-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-extrabold text-lg rounded-xl transition duration-300 shadow-xl shadow-pink-500/50 disabled:opacity-50 disabled:shadow-none" disabled>
                 <span id="buttonText">Luncurkan Pemrosesan Model</span>
                 <span id="loadingSpinner" class="hidden">
@@ -109,7 +100,6 @@ html_content = """
             </button>
         </div>
 
-        <!-- Pesan Modal untuk Simulasi -->
         <div id="messageBox" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center p-4 z-50">
             <div class="bg-gray-800 p-8 rounded-xl border border-lime-500 shadow-2xl max-w-sm text-center">
                 <p id="messageContent" class="text-xl font-bold text-lime-400 mb-4"></p>
@@ -128,17 +118,21 @@ html_content = """
         let detectionListElement;
         let resultsArea;
         let uploadedFile;
+        let currentDetections = []; // Menyimpan hasil deteksi saat ini
 
-        // Data simulasi (Mock Data) yang disesuaikan untuk Cheetah atau Singa
+        // MODIFIKASI: Data simulasi (Mock Data) yang disesuaikan untuk Cheetah atau Lion
+        // Klasifikasi: Hanya nama kelas.
+        // Deteksi: Hanya objek 'Cheetah' dan 'Lion'.
         const mockResults = {
-            classification: "Kucing Besar Afrika (Probabilitas: 99.5%)",
+            classification: "Lion", // MODIFIKASI: Hanya klasifikasi 'Lion' atau 'Cheetah'
             detections: [
-                // Warna dan Bounding Box untuk Cheetah/Singa
-                { class: 'Cheetah/Singa', color: '#FFA500', box: [250, 200, 650, 550], confidence: 0.97 }, // Oranye untuk hewan utama
-                { class: 'Savana', color: '#32CD32', box: [0, 500, 1000, 1000], confidence: 0.92 }, // Hijau Limau untuk latar belakang
-                { class: 'Pohon Akasia', color: '#8A2BE2', box: [700, 100, 950, 450], confidence: 0.85 }, // Biru Ungu untuk pohon
+                // MODIFIKASI: Hanya objek Lion/Cheetah
+                { class: 'Lion', color: '#FF7F50', box: [250, 200, 750, 600], confidence: 0.98 }, // Oranye Coral
+                // Tambahkan objek lain jika perlu (misal: 'Lion' kedua atau 'Cheetah')
+                { class: 'Cheetah', color: '#ADD8E6', box: [50, 450, 200, 600], confidence: 0.82 }, // Biru Muda
             ]
         };
+        // Catatan: Jika gambarnya adalah Cheetah, ubah `classification` di atas menjadi "Cheetah".
 
         document.addEventListener('DOMContentLoaded', () => {
             uploadedImageElement = document.getElementById('uploadedImage');
@@ -171,6 +165,9 @@ html_content = """
                     // Bersihkan canvas
                     const ctx = detectionCanvas.getContext('2d');
                     ctx.clearRect(0, 0, detectionCanvas.width, detectionCanvas.height);
+                    
+                    // Reset daftar deteksi saat ini
+                    currentDetections = [];
 
                     // Bersihkan hasil sebelumnya
                     classificationResultElement.textContent = 'Menunggu Pemrosesan...';
@@ -201,16 +198,15 @@ html_content = """
             // Set dimensi canvas
             detectionCanvas.width = imgWidth;
             detectionCanvas.height = imgHeight;
-            // Set posisi canvas agar menutupi gambar
-            // Posisi sudah diatur oleh CSS: absolute top-0 left-0
+            // Posisi canvas sudah diatur oleh CSS: absolute top-0 left-0
         }
 
         window.addEventListener('resize', () => {
             if (uploadedFile) {
                 setCanvasSize();
                 // Jika sudah diproses, gambar ulang kotak deteksi
-                if (classificationResultElement.textContent !== 'Menunggu Pemrosesan...') {
-                    drawBoundingBoxes();
+                if (currentDetections.length > 0) {
+                    drawBoundingBoxes(currentDetections);
                 }
             }
         });
@@ -231,6 +227,13 @@ html_content = """
             classificationResultElement.classList.remove('bg-fuchsia-800/50', 'border-fuchsia-500/80');
             classificationResultElement.classList.add('bg-gray-700/30', 'border-gray-600');
             
+            // Simpan hasil deteksi yang difilter (hanya Lion atau Cheetah)
+            currentDetections = mockResults.detections.filter(d => d.class === 'Lion' || d.class === 'Cheetah');
+            if (currentDetections.length === 0) {
+                // Tambahkan deteksi dummy jika tidak ada, agar canvas tidak kosong pada resize
+                 currentDetections = [{ class: 'Tidak Terdeteksi', color: '#FF0000', box: [100, 100, 100, 100], confidence: 0 }];
+            }
+
             // Simulasi waktu pemrosesan 3 detik
             setTimeout(() => {
                 // Sembunyikan loading state
@@ -239,15 +242,15 @@ html_content = """
                 document.getElementById('loadingSpinner').classList.add('hidden');
 
                 // Tampilkan hasil Klasifikasi (Model H5)
-                classificationResultElement.textContent = mockResults.classification;
+                classificationResultElement.textContent = mockResults.classification; // Menggunakan hasil tanpa persentase
                 classificationResultElement.classList.remove('bg-gray-700/30', 'border-gray-600');
                 classificationResultElement.classList.add('bg-fuchsia-800/50', 'border-fuchsia-500/80');
 
                 // Tampilkan hasil Deteksi Objek (YOLOv8)
-                displayDetectionList(mockResults.detections);
+                displayDetectionList(currentDetections.filter(d => d.class !== 'Tidak Terdeteksi'));
                 
                 // Gambar bounding boxes di canvas
-                drawBoundingBoxes(mockResults.detections);
+                drawBoundingBoxes(currentDetections.filter(d => d.class !== 'Tidak Terdeteksi'));
 
                 showMessage("🎉 Pemrosesan Selesai! Visualisasi hasil model telah ditampilkan.");
 
@@ -258,7 +261,7 @@ html_content = """
         function displayDetectionList(detections) {
             detectionListElement.innerHTML = '';
             if (detections.length === 0) {
-                detectionListElement.innerHTML = '<li class="text-sm text-gray-500 py-2">Tidak ada objek yang terdeteksi dengan tingkat kepercayaan yang cukup.</li>';
+                detectionListElement.innerHTML = '<li class="text-sm text-gray-500 py-2">Tidak ada objek Lion atau Cheetah yang terdeteksi.</li>';
                 return;
             }
 
@@ -279,7 +282,7 @@ html_content = """
         }
 
         // 4. Gambar Bounding Boxes di Canvas
-        function drawBoundingBoxes(detections = mockResults.detections) {
+        function drawBoundingBoxes(detections) {
             if (!uploadedImageElement.complete) {
                 // Pastikan gambar sudah dimuat sebelum menggambar
                 uploadedImageElement.onload = () => drawBoundingBoxes(detections);
@@ -288,14 +291,17 @@ html_content = """
             
             setCanvasSize();
             const ctx = detectionCanvas.getContext('2d');
-            const imgWidth = uploadedImageElement.naturalWidth; // Ukuran asli gambar
-            const imgHeight = uploadedImageElement.naturalHeight;
             const canvasWidth = detectionCanvas.width; // Ukuran tampilan gambar
             const canvasHeight = detectionCanvas.height;
 
             ctx.clearRect(0, 0, canvasWidth, canvasHeight); // Bersihkan canvas
 
             detections.forEach(detection => {
+                // Hanya memproses 'Lion' atau 'Cheetah'
+                if (detection.class !== 'Lion' && detection.class !== 'Cheetah') {
+                    return;
+                }
+                
                 // Koordinat kotak: [x_min, y_min, x_max, y_max] (dari 0 hingga 1000 dalam mock data)
                 // Ubah ke koordinat piksel tampilan
                 const x = detection.box[0] * (canvasWidth / 1000);
