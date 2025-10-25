@@ -52,13 +52,13 @@ html_content = """
         <h1 class="text-4xl font-extrabold mb-4 text-white text-center tracking-tight">
             Aplikasi Klasifikasi & Deteksi Objek
         </h1>
-        <!-- MODIFIKASI: Menghapus kata 'Simulasi' -->
         <p class="text-center mb-8 text-gray-400">
             Visualisasi hasil dari model <span class="text-lime-400 font-semibold">YOLOv8 (.pt)</span> dan <span class="text-fuchsia-400 font-semibold">Classifier (.h5)</span>.
         </p>
 
         <!-- Area Unggah File -->
-        <div class="mb-8 p-6 border-2 border-dashed border-pink-500/50 bg-gray-800 rounded-xl hover:border-pink-400 hover:shadow-md hover:shadow-pink-500/20 transition duration-300">
+        <div class="mb-8 p-6 border-2 border-dashed border-pink-500/50 bg-gray-800 rounded-xl 
+              hover:border-pink-400 hover:shadow-md hover:shadow-pink-500/20 transition duration-300">
             <input type="file" id="imageUpload" accept="image/*" class="hidden" onchange="previewImage(event)">
             <label for="imageUpload" class="cursor-pointer flex flex-col items-center justify-center py-6 text-gray-400">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10 mb-2 text-pink-400 animate-pulse">
@@ -100,7 +100,6 @@ html_content = """
             <!-- Tombol Proses dengan Gradien -->
             <button id="processButton" onclick="processImage()" class="w-full mt-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-extrabold text-lg rounded-xl transition duration-300 shadow-xl shadow-pink-500/50 disabled:opacity-50 disabled:shadow-none" disabled>
                 <span id="buttonText">Luncurkan Pemrosesan Model</span>
-                <!-- MODIFIKASI: Menghapus kata 'Simulasi' -->
                 <span id="loadingSpinner" class="hidden">
                     <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -112,7 +111,6 @@ html_content = """
         </div>
 
         <!-- Pesan Modal untuk Simulasi -->
-        <!-- MODIFIKASI: Menghapus kata 'Simulasi' pada deskripsi tombol -->
         <div id="messageBox" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center p-4 z-50">
             <div class="bg-gray-800 p-8 rounded-xl border border-lime-500 shadow-2xl max-w-sm text-center">
                 <p id="messageContent" class="text-xl font-bold text-lime-400 mb-4"></p>
@@ -275,7 +273,6 @@ html_content = """
                 // Gambar bounding boxes di canvas
                 drawBoundingBoxes(currentDetections);
 
-                // MODIFIKASI: Menghapus kata 'Simulasi'
                 showMessage("🎉 Pemrosesan Selesai! Hasil model telah ditampilkan.");
 
             }, 3000); // Simulasi waktu proses
@@ -355,11 +352,3 @@ html_content = """
 
 # Tanamkan konten HTML ke Streamlit
 components.html(html_content, height=1000, scrolling=True)
-
-# Menambahkan Catatan Streamlit di bawah
-st.markdown("""
-    ---
-    <p class="text-sm text-gray-500 text-center">
-        *Visualisasi ini disematkan ke dalam Streamlit menggunakan `st.components.v1.html`. Semua fungsionalitas (unggah gambar, pemrosesan) dijalankan oleh JavaScript di sisi klien (browser).
-    </p>
-""", unsafe_allow_html=True)
